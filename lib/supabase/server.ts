@@ -3,8 +3,11 @@ import type { SetAllCookies } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 import { publicEnv } from "@/lib/env";
+import type { Database } from "@/types/database";
 
-export function createClient() {
+type ServerClient = ReturnType<typeof createServerClient<Database>>;
+
+export function createClient(): ServerClient {
   if (
     !publicEnv.NEXT_PUBLIC_SUPABASE_URL ||
     !publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -16,7 +19,7 @@ export function createClient() {
 
   const cookieStore = cookies();
 
-  return createServerClient(
+  return createServerClient<Database>(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
     publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {

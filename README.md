@@ -4,7 +4,7 @@ PlanItAhead is a free web app for families planning U.S. National Park visits be
 
 Tagline: **Know before you go.**
 
-This repository is currently Phase 1 only: project foundation, tooling, design system, Supabase wiring, and a deployable skeleton. It intentionally does not include park data, forecasts, auth flows, cron jobs, or business features yet.
+This repository is currently through Phase 2: project foundation plus the Supabase schema, RLS policies, typed database helpers, and launch park seed data. It intentionally does not include external data ingestion, forecast logic, auth screens, cron jobs, or planner UI yet.
 
 ## Tech Stack
 
@@ -12,6 +12,7 @@ This repository is currently Phase 1 only: project foundation, tooling, design s
 - TypeScript strict mode
 - Tailwind CSS
 - Supabase Postgres/Auth via `@supabase/supabase-js` and `@supabase/ssr`
+- Supabase CLI migrations in `supabase/migrations`
 - lucide-react icons
 - date-fns
 - zod env validation
@@ -32,7 +33,7 @@ Copy env values:
 cp .env.example .env.local
 ```
 
-For this phase, placeholder or empty env values are enough for local build checks. Add real values when Supabase, NPS, RIDB, and cron integrations are introduced.
+Placeholder or empty env values are enough for local build checks. Add real Supabase values before running database commands against a project.
 
 Run the app:
 
@@ -63,6 +64,11 @@ npm run lint
 npm run build
 npm run start
 npm run format
+npm run db:start
+npm run db:link
+npm run db:migrate
+npm run db:reset
+npm run db:types
 ```
 
 Health check:
@@ -79,6 +85,100 @@ Expected shape:
   "time": "2026-06-02T00:00:00.000Z"
 }
 ```
+
+## Database Workflow
+
+Phase 2 uses versioned Supabase SQL migrations:
+
+```text
+supabase/
+  config.toml
+  migrations/
+    20260602170000_create_schema.sql
+    20260602171000_seed_launch_parks.sql
+types/
+  database.ts
+```
+
+Link a hosted Supabase project:
+
+```bash
+npm run db:link
+```
+
+Apply migrations and seed data to the linked project:
+
+```bash
+npm run db:migrate
+```
+
+Start and reset a local Supabase stack, if Docker is available:
+
+```bash
+npm run db:start
+npm run db:reset
+```
+
+Regenerate TypeScript database types after schema changes:
+
+```bash
+npm run db:types
+```
+
+`types/database.ts` is committed so query helpers compile even before a local Supabase stack is running.
+
+## Schema Overview
+
+Reference data, publicly readable through RLS:
+
+- `parks`: curated launch parks and card metadata.
+- `lots`: representative parking areas per park.
+- `visitation_history`: 12 months x 7 day-of-week baseline rows per park.
+- `daily_forecast`: generated forecast cache for later phases.
+- `alerts`: NPS alert cache for later phases.
+
+User data, owner-scoped through RLS:
+
+- `profiles`: one row per Supabase Auth user, auto-created by trigger.
+- `saved_trips`: saved park/date plans per user.
+
+The seed migration creates:
+
+- 8 active launch parks.
+- 24 lots, 3 per park.
+- 672 visitation history rows, 84 per park.
+
+Quick verification queries:
+
+```sql
+select count(*) from public.parks where is_active;
+select park_id, count(*) from public.lots group by park_id;
+select park_id, count(*) from public.visitation_history group by park_id;
+```
+
+RLS verification:
+
+```sql
+select tablename, rowsecurity
+from pg_tables
+where schemaname = 'public'
+  and tablename in (
+    'parks',
+    'lots',
+    'visitation_history',
+    'daily_forecast',
+    'alerts',
+    'profiles',
+    'saved_trips'
+  );
+
+select tablename, policyname, cmd
+from pg_policies
+where schemaname = 'public'
+order by tablename, policyname;
+```
+
+Reference tables have `SELECT` policies with `using (true)`. `profiles` and `saved_trips` policies are scoped to `auth.uid()`.
 
 ## Railway Deploy
 
@@ -114,7 +214,11 @@ app/
 components/ui/
 lib/
   forecast/
+  queries/
   sources/
   supabase/
+supabase/
+  migrations/
 types/
+  database.ts
 ```
