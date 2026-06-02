@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pia-cream: #f3ead6;
+  --pia-cream-2: #efe6d2;
+  --pia-cream-3: #e9dfc8;
+  --pia-ink: #2a2a26;
+  --pia-ink-soft: #5a5446;
+  --pia-muted: #8a8475;
+  --pia-green: #2f5d3a;
+  --pia-green-soft: #e4efe2;
+  --pia-amber: #c98a1e;
+  --pia-amber-deep: #a8631f;
+  --pia-amber-soft: #f6ecd6;
+  --pia-red: #b14635;
+  --pia-red-soft: #f4ddd6;
+  --pia-border: #e2d8be;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--pia-ink);
+  background: radial-gradient(
+    120% 80% at 80% -10%,
+    #f3ead6 0%,
+    #efe6d2 35%,
+    #e9dfc8 100%
+  );
+}
+
+::selection {
+  color: #ffffff;
+  background: var(--pia-green);
+}
