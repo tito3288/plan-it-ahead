@@ -36,3 +36,22 @@ export function getServerEnv() {
     CRON_SECRET: process.env.CRON_SECRET
   });
 }
+
+type ServerEnv = z.infer<typeof serverEnvSchema>;
+type ServerEnvKey = keyof ServerEnv;
+
+export function getRequiredServerEnv<const TKeys extends readonly ServerEnvKey[]>(
+  keys: TKeys
+): Pick<ServerEnv, TKeys[number]> {
+  const env = getServerEnv();
+  const missing = keys.filter((key) => !env[key]);
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required env vars: ${missing.join(", ")}`);
+  }
+
+  return Object.fromEntries(keys.map((key) => [key, env[key]])) as Pick<
+    ServerEnv,
+    TKeys[number]
+  >;
+}

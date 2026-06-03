@@ -4,7 +4,7 @@ PlanItAhead is a free web app for families planning U.S. National Park visits be
 
 Tagline: **Know before you go.**
 
-This repository is currently through Phase 2: project foundation plus the Supabase schema, RLS policies, typed database helpers, and launch park seed data. It intentionally does not include external data ingestion, forecast logic, auth screens, cron jobs, or planner UI yet.
+This repository is currently through Phase 3: project foundation, Supabase schema, RLS policies, typed database helpers, launch park seed data, and the server-side data ingestion layer. It intentionally does not include forecast logic, auth screens, live cron scheduling, or planner UI yet.
 
 ## Tech Stack
 
@@ -33,7 +33,7 @@ Copy env values:
 cp .env.example .env.local
 ```
 
-Placeholder or empty env values are enough for local build checks. Add real Supabase values before running database commands against a project.
+Placeholder or empty env values are enough for local build checks. Add real Supabase and data-source values before running database or ingestion commands.
 
 Run the app:
 
@@ -49,10 +49,10 @@ Open [http://localhost:3000](http://localhost:3000).
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Browser/server | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser/server | Supabase anonymous key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server only | Server-side privileged Supabase access for later phases |
-| `NPS_API_KEY` | Server only | National Park Service API key for later data ingestion |
-| `RIDB_API_KEY` | Server only | Recreation.gov RIDB API key for later data ingestion |
-| `CRON_SECRET` | Server only | Shared secret for protected Railway Cron API routes later |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server only | Privileged Supabase writes for ingestion; never expose to client code |
+| `NPS_API_KEY` | Server only | Free National Park Service API key from developer.nps.gov |
+| `RIDB_API_KEY` | Server only | Free Recreation.gov RIDB key from ridb.recreation.gov/profile |
+| `CRON_SECRET` | Server only | Long random string required by `/api/cron/refresh` |
 
 `lib/env.ts` validates the current environment with zod. Public env can be imported by browser-safe code; server-only values should be read through server modules only.
 
@@ -69,6 +69,7 @@ npm run db:link
 npm run db:migrate
 npm run db:reset
 npm run db:types
+npm run ingest
 ```
 
 Health check:
@@ -88,7 +89,7 @@ Expected shape:
 
 ## Database Workflow
 
-Phase 2 uses versioned Supabase SQL migrations:
+The database uses versioned Supabase SQL migrations:
 
 ```text
 supabase/
@@ -96,6 +97,7 @@ supabase/
   migrations/
     20260602170000_create_schema.sql
     20260602171000_seed_launch_parks.sql
+    20260603110000_add_weather_cache.sql
 types/
   database.ts
 ```
@@ -127,6 +129,12 @@ npm run db:types
 
 `types/database.ts` is committed so query helpers compile even before a local Supabase stack is running.
 
+Some networks block the Supabase Postgres connection used by `db:migrate`. If that happens, run the migration SQL in the Supabase SQL Editor, then regenerate types with:
+
+```bash
+supabase gen types typescript --project-id krhtcphqjeinglrbkqby > types/database.ts
+```
+
 ## Schema Overview
 
 Reference data, publicly readable through RLS:
@@ -136,6 +144,7 @@ Reference data, publicly readable through RLS:
 - `visitation_history`: 12 months x 7 day-of-week baseline rows per park.
 - `daily_forecast`: generated forecast cache for later phases.
 - `alerts`: NPS alert cache for later phases.
+- `weather_cache`: Open-Meteo daily weather cache for later phases.
 
 User data, owner-scoped through RLS:
 
@@ -168,6 +177,7 @@ where schemaname = 'public'
     'visitation_history',
     'daily_forecast',
     'alerts',
+    'weather_cache',
     'profiles',
     'saved_trips'
   );
@@ -180,6 +190,67 @@ order by tablename, policyname;
 
 Reference tables have `SELECT` policies with `using (true)`. `profiles` and `saved_trips` policies are scoped to `auth.uid()`.
 
+## Data Ingestion
+
+Phase 3 caches official/free data sources for later forecast generation:
+
+- NPS Data API alerts via `lib/sources/nps.ts`.
+- Recreation.gov RIDB facility candidates via `lib/sources/recreation.ts`.
+- Open-Meteo weather via `lib/sources/weather.ts`.
+
+The ingestion pipeline writes through the server-only Supabase admin client in `lib/supabase/admin.ts`. This client requires `SUPABASE_SERVICE_ROLE_KEY` and throws if used in a browser context.
+
+Run ingestion locally:
+
+```bash
+npm run ingest
+```
+
+Expected effects:
+
+- Upserts current NPS alerts into `alerts` and removes stale alerts per park.
+- Updates `parks.ridb_facility_ids` with best-effort RIDB matches.
+- Upserts 10 days of Open-Meteo daily data into `weather_cache`.
+
+The command prints a structured summary:
+
+```json
+{
+  "alerts": { "parks": 8, "received": 0, "upserted": 0, "deleted": 0 },
+  "facilities": { "parks": 8, "updated": 8, "noMatches": [] },
+  "weather": { "parks": 8, "days": 10, "upserted": 80 },
+  "errors": []
+}
+```
+
+The syncs are idempotent, so rerunning should not create duplicate alerts or weather rows.
+
+## Cron Refresh
+
+The refresh endpoint supports `GET` for manual testing and `POST` for schedulers:
+
+```text
+GET or POST /api/cron/refresh
+Authorization: Bearer <CRON_SECRET>
+```
+
+Manual test:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  https://<app-url>/api/cron/refresh
+```
+
+Unauthorized requests return `401`.
+
+Scheduling options:
+
+- Railway Cron, preferred: schedule an HTTP POST to `https://<app-url>/api/cron/refresh` with `Authorization: Bearer <CRON_SECRET>`. Recommended cadence: daily at `0 9 * * *`, with an optional alerts-only cadence later every few hours after Phase 4 splits refresh modes.
+- cron-job.org: create a scheduled HTTPS POST to the same endpoint with the same authorization header and daily cadence.
+
+Do not wire live scheduling until deployment hardening in Phase 8.
+
 ## Railway Deploy
 
 1. Create a new Railway project from this repository.
@@ -190,7 +261,7 @@ Reference tables have `SELECT` policies with `using (true)`. `profiles` and `sav
 6. Use `npm run start` as the start command.
 7. Set the service port to Railway's injected `PORT`; Next.js reads it automatically through `npm run start`.
 
-Railway Cron will be added in a later phase by hitting a protected API route with `CRON_SECRET`.
+Railway Cron can call the protected refresh route documented above. Live schedule setup is deferred to Phase 8.
 
 ## Phase Roadmap
 
@@ -214,6 +285,7 @@ app/
 components/ui/
 lib/
   forecast/
+  ingest/
   queries/
   sources/
   supabase/

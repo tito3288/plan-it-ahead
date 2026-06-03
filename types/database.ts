@@ -346,6 +346,59 @@ export type Database = {
           },
         ]
       }
+      weather_cache: {
+        Row: {
+          created_at: string
+          fetched_at: string
+          forecast_date: string
+          id: string
+          park_id: string
+          precip_chance: number | null
+          raw: Json | null
+          summary: string
+          temp_high: number | null
+          temp_low: number | null
+          updated_at: string
+          weather_code: number | null
+        }
+        Insert: {
+          created_at?: string
+          fetched_at?: string
+          forecast_date: string
+          id?: string
+          park_id: string
+          precip_chance?: number | null
+          raw?: Json | null
+          summary: string
+          temp_high?: number | null
+          temp_low?: number | null
+          updated_at?: string
+          weather_code?: number | null
+        }
+        Update: {
+          created_at?: string
+          fetched_at?: string
+          forecast_date?: string
+          id?: string
+          park_id?: string
+          precip_chance?: number | null
+          raw?: Json | null
+          summary?: string
+          temp_high?: number | null
+          temp_low?: number | null
+          updated_at?: string
+          weather_code?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weather_cache_park_id_fkey"
+            columns: ["park_id"]
+            isOneToOne: false
+            referencedRelation: "parks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
