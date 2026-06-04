@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 type ButtonBaseProps = {
   children: ReactNode;
   className?: string;
+  variant?: "primary" | "secondary";
 };
 
 type LinkButtonProps = ButtonBaseProps &
@@ -20,11 +21,22 @@ type NativeButtonProps = ButtonBaseProps &
 
 type ButtonProps = LinkButtonProps | NativeButtonProps;
 
-const buttonClasses =
-  "inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-green px-6 py-3 text-base font-semibold text-white transition hover:bg-[#284f32] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green";
+const baseButtonClasses =
+  "inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 py-3 text-base font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green disabled:pointer-events-none disabled:opacity-50";
 
-export function Button({ className, children, ...props }: ButtonProps) {
-  const classes = cn(buttonClasses, className);
+const variantClasses = {
+  primary: "bg-green text-white hover:bg-[#284f32]",
+  secondary:
+    "border border-border bg-white/60 text-green hover:border-green hover:bg-green-soft"
+};
+
+export function Button({
+  className,
+  children,
+  variant = "primary",
+  ...props
+}: ButtonProps) {
+  const classes = cn(baseButtonClasses, variantClasses[variant], className);
 
   if (typeof props.href === "string") {
     const { href, ...linkProps } = props;
