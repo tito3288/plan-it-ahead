@@ -58,7 +58,7 @@ export default async function TripsPage() {
           My Trips
         </p>
         <h1 className="mt-3 font-heading text-4xl font-semibold leading-tight text-ink sm:text-6xl">
-          {name ? `${name}'s trail-ready plans` : "Saved plans"}
+          Your saved plans
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-8 text-ink-soft">
           {name
