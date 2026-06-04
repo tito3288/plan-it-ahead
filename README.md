@@ -4,7 +4,7 @@ PlanItAhead is a free web app for families planning U.S. National Park visits be
 
 Tagline: **Know before you go.**
 
-This repository is currently through Phase 7: project foundation, Supabase schema, RLS policies, typed database helpers, launch park seed data, server-side data ingestion, deterministic forecasts, the planning flow, the forecast page, Supabase Auth, and saved trips. It intentionally does not include production deploy hardening or live cron scheduling yet.
+This repository is currently through Phase 8: project foundation, Supabase schema, RLS policies, typed database helpers, launch park seed data, server-side data ingestion, deterministic forecasts, the planning flow, the forecast page, Supabase Auth, saved trips, and production deployment configuration. It intentionally keeps post-v1 hardening such as separate staging/prod Supabase projects out of scope.
 
 ## Tech Stack
 
@@ -49,6 +49,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | ------------------------------- | -------------- | --------------------------------------------------------------------- |
 | `NEXT_PUBLIC_SUPABASE_URL`      | Browser/server | Supabase project URL                                                  |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser/server | Supabase anonymous key                                                |
+| `NEXT_PUBLIC_SITE_URL`          | Browser/server | Canonical site URL for auth redirects; `http://localhost:3000` in dev |
 | `SUPABASE_SERVICE_ROLE_KEY`     | Server only    | Privileged Supabase writes for ingestion; never expose to client code |
 | `NPS_API_KEY`                   | Server only    | Free National Park Service API key from developer.nps.gov             |
 | `RIDB_API_KEY`                  | Server only    | Free Recreation.gov RIDB key from ridb.recreation.gov/profile         |
@@ -76,7 +77,7 @@ Local magic-link testing:
 3. Run `npm run dev`, open `/login`, enter your email, and follow the link from the email.
 4. If email delivery is slow or blocked during testing, check Supabase Auth email rate limits before debugging app code.
 
-Production email note: Supabase default auth emails are fine for testing but rate-limited. At deploy time, configure custom SMTP in Supabase Auth settings. The owner plans to use Resend SMTP in Phase 8.
+Production email note: Supabase default auth emails are fine for testing but rate-limited. At deploy time, configure custom SMTP in Supabase Auth settings. The owner plans to use Resend SMTP.
 
 Production redirect note: Supabase Auth redirect allowlists must include localhost for development and the production domain, including `https://planitahead.com/auth/callback` when the site is deployed.
 
@@ -337,15 +338,112 @@ The protected refresh endpoint now runs ingestion first, then forecast generatio
 
 ## Railway Deploy
 
-1. Create a new Railway project from this repository.
-2. Add a single Next.js service.
-3. Configure environment variables from `.env.example`.
-4. Use `npm install` as the install command.
-5. Use `npm run build` as the build command.
-6. Use `npm run start` as the start command.
-7. Set the service port to Railway's injected `PORT`; Next.js reads it automatically through `npm run start`.
+The repo includes `railway.json` for Nixpacks:
 
-Railway Cron can call the protected refresh route documented above. Live schedule setup is deferred to Phase 8.
+- Build command: `npm run build`
+- Start command: `npm run start`
+- Health check path: `/api/health`
+- Node target: `20.x` in `package.json`
+
+`next start` respects Railway's injected `PORT`; do not hardcode port `3000` in production.
+
+### 1. Create the Railway service
+
+1. Railway -> New Project -> Deploy from GitHub repo.
+2. Select `tito3288/plan-it-ahead`.
+3. Set the service to deploy from the `main` branch.
+4. Railway should detect Next.js through Nixpacks and use `railway.json`.
+
+The first deploy may fail or run without full runtime behavior until variables are added.
+
+### 2. Add Railway variables
+
+In the Railway service Variables tab, add:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=https://planitahead.com
+SUPABASE_SERVICE_ROLE_KEY=
+NPS_API_KEY=
+RIDB_API_KEY=
+CRON_SECRET=
+```
+
+Notes:
+
+- `SUPABASE_SERVICE_ROLE_KEY` must be the server-only `sb_secret_...` key. Never commit it and never prefix it with `NEXT_PUBLIC_`.
+- `CRON_SECRET` should be a long random string and must match the cron-job.org Authorization header.
+- This app uses one Supabase project for v1: project ref `krhtcphqjeinglrbkqby`.
+
+Redeploy after adding variables. Then verify:
+
+```bash
+curl https://<railway-url>/api/health
+```
+
+Expected response includes `"status":"ok"`.
+
+### 3. Connect `planitahead.com`
+
+1. Railway service -> Settings -> Networking -> Custom Domain.
+2. Add `planitahead.com`. Add `www.planitahead.com` too if desired.
+3. Railway will provide a DNS target.
+4. In Cloudflare DNS, add the record Railway specifies. For the apex domain, use the CNAME/flattening setup Railway recommends.
+5. Set the record to DNS only initially while Railway verifies it. Proxying can be enabled after TLS is active.
+6. Wait for Railway to show the domain as Active, then test `https://planitahead.com`.
+
+### 4. Configure Supabase Auth URLs
+
+Supabase dashboard -> Authentication -> URL Configuration:
+
+1. Site URL: `https://planitahead.com`
+2. Redirect URLs allowlist:
+   - `https://planitahead.com/auth/callback`
+   - `http://localhost:3000/auth/callback`
+
+Magic-link redirects use `NEXT_PUBLIC_SITE_URL`, so keep Railway set to `https://planitahead.com` and local `.env.local` set to `http://localhost:3000`.
+
+### 5. Configure Resend SMTP for auth email
+
+Supabase's default auth emails are rate-limited. For production, use Resend SMTP:
+
+1. In Resend, verify a sending domain, for example `planitahead.com` or a mail subdomain.
+2. Create or copy SMTP credentials.
+3. Supabase dashboard -> Authentication -> Emails -> SMTP Settings.
+4. Enable custom SMTP and enter:
+   - Host: `smtp.resend.com`
+   - Port: `465` or `587`
+   - Username: `resend`
+   - Password: the Resend API key
+   - Sender: for example `no-reply@planitahead.com`
+5. Send a production magic link to confirm delivery.
+
+### 6. Wire cron-job.org
+
+Create a cron job:
+
+- URL: `https://planitahead.com/api/cron/refresh`
+- Method: `POST`
+- Header: `Authorization: Bearer <CRON_SECRET>`
+- Schedule: daily at a low-traffic hour, such as 9:00 AM. Optionally add a second alerts-focused cadence later.
+
+Run it once manually and confirm:
+
+- HTTP `200`
+- JSON summary includes ingestion and forecast results
+- Railway logs show `[cron.refresh] Starting...` and `[cron.refresh] Completed...`
+- Supabase `daily_forecast`, `alerts`, and `weather_cache` update as expected
+
+Unauthorized requests should return `401`.
+
+Manual local/prod test:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  https://planitahead.com/api/cron/refresh
+```
 
 ## Phase Roadmap
 

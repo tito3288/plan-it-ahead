@@ -9,11 +9,12 @@ import { createClient } from "@/lib/supabase/client";
 type LoginFormProps = {
   errorMessage: string | null;
   nextPath: string;
+  siteUrl: string;
 };
 
 type SubmitStatus = "idle" | "sent" | "error";
 
-export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
+export function LoginForm({ errorMessage, nextPath, siteUrl }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState(errorMessage);
   const [status, setStatus] = useState<SubmitStatus>(
@@ -27,7 +28,7 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
     setMessage(null);
 
     const supabase = createClient();
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+    const redirectTo = `${siteUrl}/auth/callback?next=${encodeURIComponent(
       nextPath
     )}`;
     const { error } = await supabase.auth.signInWithOtp({
