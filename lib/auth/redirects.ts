@@ -76,6 +76,26 @@ export function buildAuthCallbackUrlFromSiteUrl(
   return url.toString();
 }
 
+export function buildPasswordResetUrl(
+  nextPath: string,
+  requestOrigin?: string | null
+) {
+  return buildPasswordResetUrlFromSiteUrl(
+    nextPath,
+    getRuntimeSiteUrl(requestOrigin)
+  );
+}
+
+export function buildPasswordResetUrlFromSiteUrl(
+  nextPath: string,
+  siteUrl: string
+) {
+  const url = new URL("/auth/reset", siteUrl);
+  url.searchParams.set("next", safeRedirectPath(nextPath));
+
+  return url.toString();
+}
+
 export function buildAppRedirectUrl(
   path: string,
   requestOrigin?: string | null

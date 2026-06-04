@@ -59,27 +59,50 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Auth and Saved Trips
 
-PlanItAhead uses Supabase Auth passwordless email magic links through `@supabase/ssr`.
+PlanItAhead uses Supabase Auth through `@supabase/ssr`. Email + password is
+the primary sign-in method, and passwordless magic links remain available as a
+secondary option.
 
 Routes:
 
-- `/login`: enter an email and receive a magic link.
-- `/auth/callback`: exchanges the magic-link code for a cookie-based session.
+- `/login`: sign in with email + password, create an account, or request a
+  magic link.
+- `/auth/callback`: exchanges confirmation and magic-link codes for a
+  cookie-based session.
+- `/auth/forgot`: requests a password reset email.
+- `/auth/reset`: handles the reset email link and lets the user set a new
+  password.
 - `/auth/signout`: clears the Supabase session and returns home.
 - `/trips`: authenticated saved-trip list with delete actions.
 
 The App Router session is refreshed by `middleware.ts`. User data access uses the authenticated Supabase client, so `saved_trips` RLS policies enforce that users can only read, create, update, or delete their own rows. The service-role client is reserved for ingestion and forecast generation only.
 
-Local magic-link testing:
+Supabase Auth settings:
+
+1. Authentication -> Sign In / Providers -> Email: ensure Email/password is
+   enabled.
+2. Keep Confirm email on for production so first-time signups must verify their
+   email before using the account.
+3. Authentication -> URL Configuration -> Redirect URLs allowlist:
+   - `https://planitahead.com/auth/callback`
+   - `https://planitahead.com/auth/reset`
+   - `http://localhost:3000/auth/callback`
+   - `http://localhost:3000/auth/reset`
+
+Local auth testing:
 
 1. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`.
 2. In Supabase Auth settings, include `http://localhost:3000` as the Site URL or redirect allowlist entry.
-3. Run `npm run dev`, open `/login`, enter your email, and follow the link from the email.
+3. Run `npm run dev`, open `/login`, and test both email + password and the
+   secondary magic-link option.
 4. If email delivery is slow or blocked during testing, check Supabase Auth email rate limits before debugging app code.
 
 Production email note: Supabase default auth emails are fine for testing but rate-limited. At deploy time, configure custom SMTP in Supabase Auth settings. The owner plans to use Resend SMTP.
 
-Production redirect note: Supabase Auth redirect allowlists must include localhost for development and the production domain, including `https://planitahead.com/auth/callback` when the site is deployed.
+Production redirect note: Supabase Auth redirect allowlists must include localhost
+for development and the production domain, including
+`https://planitahead.com/auth/callback` and
+`https://planitahead.com/auth/reset` when the site is deployed.
 
 ## Commands
 
@@ -400,9 +423,13 @@ Supabase dashboard -> Authentication -> URL Configuration:
 1. Site URL: `https://planitahead.com`
 2. Redirect URLs allowlist:
    - `https://planitahead.com/auth/callback`
+   - `https://planitahead.com/auth/reset`
    - `http://localhost:3000/auth/callback`
+   - `http://localhost:3000/auth/reset`
 
-Magic-link redirects use `NEXT_PUBLIC_SITE_URL`, so keep Railway set to `https://planitahead.com` and local `.env.local` set to `http://localhost:3000`.
+Auth redirects use `NEXT_PUBLIC_SITE_URL`, so keep Railway set to
+`https://planitahead.com` and local `.env.local` set to
+`http://localhost:3000`.
 
 ### 5. Configure Resend SMTP for auth email
 

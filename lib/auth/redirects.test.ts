@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildAuthCallbackUrlFromSiteUrl,
+  buildPasswordResetUrlFromSiteUrl,
   resolveSiteUrl
 } from "@/lib/auth/redirects";
 
@@ -25,6 +26,12 @@ describe("resolveSiteUrl", () => {
     ).toBe(
       "https://planitahead.com/auth/callback?next=%2Fplan%2Frocky-mountain%2Fforecast%3Fstart%3D2026-06-06%26end%3D2026-06-08"
     );
+  });
+
+  it("builds production password reset redirects on planitahead.com", () => {
+    expect(
+      buildPasswordResetUrlFromSiteUrl("/trips", "https://planitahead.com")
+    ).toBe("https://planitahead.com/auth/reset?next=%2Ftrips");
   });
 
   it("falls back to the request origin only outside production", () => {

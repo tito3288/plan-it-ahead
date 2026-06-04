@@ -1,18 +1,19 @@
 import Link from "next/link";
 
-import { LoginForm } from "@/app/login/LoginForm";
+import { ForgotPasswordForm } from "@/app/auth/forgot/ForgotPasswordForm";
 import { safeRedirectPath } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
-type LoginPageProps = {
+type ForgotPasswordPageProps = {
   searchParams: {
-    error?: string;
     next?: string;
   };
 };
 
-export default function LoginPage({ searchParams }: LoginPageProps) {
+export default function ForgotPasswordPage({
+  searchParams
+}: ForgotPasswordPageProps) {
   const nextPath = safeRedirectPath(searchParams.next);
 
   return (
@@ -35,21 +36,18 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
       <section className="mx-auto mt-16 grid w-full max-w-5xl gap-8 lg:grid-cols-[1fr_420px] lg:items-center">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-amber-deep">
-            Account access
+            Password reset
           </p>
           <h1 className="mt-3 font-heading text-4xl font-semibold leading-tight text-ink sm:text-6xl">
-            Save plans with your own account.
+            Get back into your plans.
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-8 text-ink-soft">
-            Sign in with email and password, create a new account, or use a
-            secure magic link when you prefer password-free access.
+            Enter your email and we will send a secure reset link through the
+            same email system used for account confirmations.
           </p>
         </div>
 
-        <LoginForm
-          errorMessage={searchParams.error ?? null}
-          nextPath={nextPath}
-        />
+        <ForgotPasswordForm nextPath={nextPath} />
       </section>
     </main>
   );

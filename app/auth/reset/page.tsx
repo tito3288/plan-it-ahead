@@ -1,19 +1,21 @@
 import Link from "next/link";
 
-import { LoginForm } from "@/app/login/LoginForm";
+import { ResetPasswordForm } from "@/app/auth/reset/ResetPasswordForm";
 import { safeRedirectPath } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
-type LoginPageProps = {
+type ResetPasswordPageProps = {
   searchParams: {
-    error?: string;
+    code?: string;
     next?: string;
   };
 };
 
-export default function LoginPage({ searchParams }: LoginPageProps) {
-  const nextPath = safeRedirectPath(searchParams.next);
+export default function ResetPasswordPage({
+  searchParams
+}: ResetPasswordPageProps) {
+  const nextPath = safeRedirectPath(searchParams.next ?? "/trips");
 
   return (
     <main className="min-h-screen px-5 py-6 sm:px-8">
@@ -35,21 +37,19 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
       <section className="mx-auto mt-16 grid w-full max-w-5xl gap-8 lg:grid-cols-[1fr_420px] lg:items-center">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-amber-deep">
-            Account access
+            New password
           </p>
           <h1 className="mt-3 font-heading text-4xl font-semibold leading-tight text-ink sm:text-6xl">
-            Save plans with your own account.
+            Choose a fresh password.
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-8 text-ink-soft">
-            Sign in with email and password, create a new account, or use a
-            secure magic link when you prefer password-free access.
+            Use at least eight characters. After your password updates, your
+            session continues with the same Supabase cookies as the rest of the
+            app.
           </p>
         </div>
 
-        <LoginForm
-          errorMessage={searchParams.error ?? null}
-          nextPath={nextPath}
-        />
+        <ResetPasswordForm code={searchParams.code ?? null} nextPath={nextPath} />
       </section>
     </main>
   );
