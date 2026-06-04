@@ -1,13 +1,28 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BrandHeader } from "@/components/flow/BrandHeader";
-import { Button } from "@/components/ui/button";
-import { getParkBySlug } from "@/lib/queries/parks";
+import { ForecastView } from "@/components/forecast/ForecastView";
+import type {
+  ForecastAlert,
+  ForecastConfidence,
+  ForecastDay,
+  ForecastDayData,
+  ForecastLotPrediction,
+  ForecastPark,
+  ForecastSource
+} from "@/components/forecast/types";
+import type { ForecastStatus } from "@/lib/forecast/config";
+import {
+  getForecast,
+  getParkAlerts,
+  getParkBySlug,
+  type DailyForecast
+} from "@/lib/queries/parks";
+import type { Json } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
-type ForecastStubPageProps = {
+type ForecastPageProps = {
   params: {
     slug: string;
   };
@@ -17,74 +32,223 @@ type ForecastStubPageProps = {
   };
 };
 
-function parseDateLabel(date: string | undefined) {
-  if (!date) {
+const maxRangeDays = 31;
+
+function parseIsoDate(date: string | undefined) {
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return null;
   }
 
   const [year, month, day] = date.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
 
-  if (!year || !month || !day) {
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
     return null;
   }
 
+  return parsed;
+}
+
+function toIsoDate(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function daysBetween(start: Date, end: Date) {
+  const msPerDay = 24 * 60 * 60 * 1000;
+
+  return Math.round((end.getTime() - start.getTime()) / msPerDay);
+}
+
+function buildDateRange(start: Date, end: Date) {
+  const totalDays = daysBetween(start, end);
+
+  return Array.from({ length: totalDays + 1 }, (_, index) =>
+    toIsoDate(addDays(start, index))
+  );
+}
+
+function formatDateLabel(date: string) {
   return new Intl.DateTimeFormat("en-US", {
     day: "numeric",
     month: "short",
     timeZone: "UTC",
     year: "numeric"
-  }).format(new Date(Date.UTC(year, month - 1, day)));
+  }).format(new Date(`${date}T00:00:00Z`));
 }
 
-export default async function ForecastStubPage({
+function formatDateRangeLabel(start: string, end: string) {
+  if (start === end) {
+    return formatDateLabel(start);
+  }
+
+  return `${formatDateLabel(start)} – ${formatDateLabel(end)}`;
+}
+
+function isRecord(value: Json): value is { [key: string]: Json | undefined } {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isForecastStatus(value: number): value is ForecastStatus {
+  return value === 0 || value === 1 || value === 2;
+}
+
+function parseConfidence(value: string): ForecastConfidence {
+  if (value === "high" || value === "medium" || value === "low") {
+    return value;
+  }
+
+  return "low";
+}
+
+function parseSource(value: string): ForecastSource {
+  if (value === "live" || value === "mixed" || value === "prediction") {
+    return value;
+  }
+
+  return "prediction";
+}
+
+function parseDailyPlan(value: Json | null): string[] {
+  if (!Array.isArray(value)) {
+    return ["Arrive early and keep one flexible backup stop in your plan."];
+  }
+
+  const steps = value.filter(
+    (step): step is string => typeof step === "string" && step.trim().length > 0
+  );
+
+  return steps.length > 0
+    ? steps
+    : ["Arrive early and keep one flexible backup stop in your plan."];
+}
+
+function parseLotPredictions(value: Json): ForecastLotPrediction[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item): ForecastLotPrediction[] => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const arriveBy = item.arrive_by;
+    const level = item.level;
+    const lotId = item.lot_id;
+    const lotName = item.lot_name;
+    const note = item.note;
+
+    if (
+      typeof arriveBy !== "string" ||
+      typeof level !== "number" ||
+      !isForecastStatus(level) ||
+      typeof lotId !== "string" ||
+      typeof lotName !== "string"
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        arrive_by: arriveBy,
+        level,
+        lot_id: lotId,
+        lot_name: lotName,
+        note: typeof note === "string" ? note : null
+      }
+    ];
+  });
+}
+
+function adaptForecast(row: DailyForecast): ForecastDayData | null {
+  const hourlyStatus = row.hourly_status.filter(isForecastStatus);
+
+  if (hourlyStatus.length !== 14) {
+    return null;
+  }
+
+  return {
+    confidence: parseConfidence(row.confidence),
+    daily_plan: parseDailyPlan(row.daily_plan),
+    headline: row.headline,
+    hourly_status: hourlyStatus,
+    lot_predictions: parseLotPredictions(row.lot_predictions),
+    source: parseSource(row.source),
+    weather_summary: row.weather_summary
+  };
+}
+
+export default async function ForecastPage({
   params,
   searchParams
-}: ForecastStubPageProps) {
+}: ForecastPageProps) {
   const park = await getParkBySlug(params.slug);
 
   if (!park) {
     notFound();
   }
 
-  const startLabel = parseDateLabel(searchParams.start);
-  const endLabel = parseDateLabel(searchParams.end);
-  const dateLabel = startLabel
-    ? endLabel && endLabel !== startLabel
-      ? `${startLabel} – ${endLabel}`
-      : startLabel
-    : "No dates selected";
+  const startDate = parseIsoDate(searchParams.start);
+  const endDate = parseIsoDate(searchParams.end) ?? startDate;
+
+  if (!startDate || !endDate) {
+    notFound();
+  }
+
+  const rangeDays = daysBetween(startDate, endDate);
+
+  if (rangeDays < 0 || rangeDays > maxRangeDays) {
+    notFound();
+  }
+
+  const start = toIsoDate(startDate);
+  const end = toIsoDate(endDate);
+  const dates = buildDateRange(startDate, endDate);
+  const [forecastRows, alerts] = await Promise.all([
+    getForecast(park.id, { end, start }),
+    getParkAlerts(park.id)
+  ]);
+  const forecastByDate = new Map(
+    forecastRows.map((row) => [row.forecast_date, adaptForecast(row)])
+  );
+  const forecastDays: ForecastDay[] = dates.map((date) => ({
+    date,
+    forecast: forecastByDate.get(date) ?? null
+  }));
+  const forecastPark: ForecastPark = {
+    full_name: park.full_name,
+    name: park.name,
+    requires_reservation: park.requires_reservation,
+    reservation_note: park.reservation_note,
+    slug: park.slug
+  };
+  const forecastAlerts: ForecastAlert[] = alerts.map((alert) => ({
+    category: alert.category,
+    description: alert.description,
+    id: alert.id,
+    title: alert.title,
+    url: alert.url
+  }));
 
   return (
     <main className="min-h-screen pb-12">
       <BrandHeader step={3} />
-
-      <section className="mx-auto flex w-full max-w-4xl flex-col items-center px-5 pt-16 text-center sm:px-8">
-        <p className="text-sm font-semibold uppercase tracking-wide text-amber-deep">
-          Step 3 of 3
-        </p>
-        <h1 className="mt-3 font-heading text-4xl font-semibold leading-tight text-ink sm:text-6xl">
-          Forecast for {park.name}
-        </h1>
-        <p className="mt-5 text-xl leading-8 text-ink-soft">
-          {dateLabel} — built in Phase 6.
-        </p>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
-          The real forecast screen will show hourly crowd status, lot arrive-by
-          guidance, alerts, and a simple daily plan.
-        </p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Button href="/plan">Choose another park</Button>
-          <Button href={`/plan/${park.slug}`} variant="secondary">
-            Edit dates
-          </Button>
-        </div>
-        <Link
-          href="/"
-          className="mt-8 text-sm font-semibold text-green transition hover:text-amber-deep"
-        >
-          Back to home
-        </Link>
-      </section>
+      <ForecastView
+        alerts={forecastAlerts}
+        dateRangeLabel={formatDateRangeLabel(start, end)}
+        days={forecastDays}
+        park={forecastPark}
+      />
     </main>
   );
 }
