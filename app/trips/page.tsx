@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -31,11 +32,18 @@ export default async function TripsPage() {
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
         <Link
           href="/"
-          className="font-heading text-3xl font-semibold leading-none text-green"
+          className="shrink-0"
         >
-          PlanItAhead
+          <Image
+            src="/plan-It-ahead.png"
+            alt="PlanItAhead"
+            width={1992}
+            height={504}
+            priority
+            className="h-10 w-auto sm:h-14"
+          />
         </Link>
-        <div className="flex items-center gap-3 text-sm font-semibold">
+        <div className="flex items-center gap-3 whitespace-nowrap text-sm font-semibold">
           <Link
             href="/plan"
             className="text-green transition hover:text-amber-deep"

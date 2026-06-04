@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -15,14 +16,18 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
   return (
     <header className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-6 sm:px-8 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex items-center justify-between gap-4">
-        <Link
-          href="/"
-          className="font-heading text-3xl font-semibold leading-none text-green"
-        >
-          PlanItAhead
+        <Link href="/" className="shrink-0">
+          <Image
+            src="/plan-It-ahead.png"
+            alt="PlanItAhead"
+            width={1992}
+            height={504}
+            priority
+            className="h-10 w-auto sm:h-14"
+          />
         </Link>
 
-        <div className="flex items-center gap-3 text-sm font-semibold lg:hidden">
+        <div className="flex items-center gap-3 whitespace-nowrap text-sm font-semibold lg:hidden">
           {user ? (
             <>
               <Link
@@ -78,7 +83,7 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
           </ol>
         </nav>
 
-        <div className="hidden items-center gap-3 text-sm font-semibold lg:flex">
+        <div className="hidden items-center gap-3 whitespace-nowrap text-sm font-semibold lg:flex">
           {user ? (
             <>
               <Link
