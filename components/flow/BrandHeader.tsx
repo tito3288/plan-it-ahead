@@ -27,6 +27,7 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
             <>
               <Link
                 href="/trips"
+                prefetch={false}
                 className="text-green transition hover:text-amber-deep"
               >
                 My Trips
@@ -41,6 +42,7 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
           ) : (
             <Link
               href="/login"
+              prefetch={false}
               className="text-green transition hover:text-amber-deep"
             >
               Log in
@@ -79,6 +81,7 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
             <>
               <Link
                 href="/trips"
+                prefetch={false}
                 className="text-green transition hover:text-amber-deep"
               >
                 My Trips
@@ -93,6 +96,7 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
           ) : (
             <Link
               href="/login"
+              prefetch={false}
               className="text-green transition hover:text-amber-deep"
             >
               Log in

@@ -23,6 +23,7 @@ export function ParkCard({ park }: ParkCardProps) {
   return (
     <Link
       href={`/plan/${park.slug}`}
+      prefetch={false}
       className="group overflow-hidden rounded-2xl border border-border bg-white/70 shadow-soft backdrop-blur-sm transition duration-200 hover:-translate-y-1 hover:border-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
     >
       <div

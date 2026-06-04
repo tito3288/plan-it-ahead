@@ -1,7 +1,6 @@
 "use client";
 
 import { CheckCircle2, KeyRound, Mail } from "lucide-react";
-import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
@@ -142,7 +141,6 @@ function SuccessState({
 }
 
 export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
-  const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [showMagicLink, setShowMagicLink] = useState(false);
   const [passwordStatus, setPasswordStatus] = useState<PasswordStatus>(
@@ -197,8 +195,7 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
         return;
       }
 
-      router.replace(nextPath);
-      router.refresh();
+      window.location.assign(nextPath);
       return;
     }
 
@@ -217,8 +214,7 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
     }
 
     if (data.session) {
-      router.replace(nextPath);
-      router.refresh();
+      window.location.assign(nextPath);
       return;
     }
 

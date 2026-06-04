@@ -2,7 +2,6 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -112,7 +111,6 @@ export function Calendar({
   weatherRows,
   weatherWindowEnd
 }: CalendarProps) {
-  const router = useRouter();
   const todayDate = useMemo(() => parseDate(today), [today]);
   const forecastEndDate = useMemo(
     () => parseDate(forecastWindowEnd),
@@ -147,7 +145,7 @@ export function Calendar({
       params.set("end", range.end);
     }
 
-    router.push(`/plan/${park.slug}/forecast?${params.toString()}`);
+    window.location.assign(`/plan/${park.slug}/forecast?${params.toString()}`);
   }
 
   return (
