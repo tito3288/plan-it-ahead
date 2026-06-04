@@ -41,7 +41,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
             Save plans with your own account.
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-8 text-ink-soft">
-            Sign in with email and password, create a new account, or use a
+            Log in with email and password, sign up for a new account, or use a
             secure magic link when you prefer password-free access.
           </p>
         </div>

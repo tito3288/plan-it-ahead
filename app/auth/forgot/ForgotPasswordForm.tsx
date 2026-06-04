@@ -59,7 +59,7 @@ export function ForgotPasswordForm({ nextPath }: ForgotPasswordFormProps) {
           . Open it to choose a new password.
         </p>
         <Button className="mt-5" href="/login" variant="secondary">
-          Back to sign in
+          Back to log in
         </Button>
       </div>
     );
@@ -96,7 +96,7 @@ export function ForgotPasswordForm({ nextPath }: ForgotPasswordFormProps) {
         href={`/login?next=${encodeURIComponent(nextPath)}`}
         className="mt-5 inline-block text-sm font-semibold text-green transition hover:text-amber-deep"
       >
-        Back to sign in
+        Back to log in
       </Link>
     </form>
   );

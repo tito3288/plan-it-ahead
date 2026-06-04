@@ -178,7 +178,7 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
             setShowMagicLink(false);
           }}
         >
-          Sign in
+          Log in
         </ModeButton>
         <ModeButton
           active={mode === "signup"}
@@ -187,7 +187,7 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
             setShowMagicLink(false);
           }}
         >
-          Create account
+          Sign up
         </ModeButton>
       </div>
 
@@ -229,8 +229,8 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
             </label>
 
             <SubmitButton
-              label={mode === "signin" ? "Sign in" : "Create account"}
-              pendingLabel={mode === "signin" ? "Signing in..." : "Creating..."}
+              label={mode === "signin" ? "Log in" : "Sign up"}
+              pendingLabel={mode === "signin" ? "Logging in..." : "Signing up..."}
             />
 
             <div className="flex flex-col gap-2 text-sm font-semibold sm:flex-row sm:items-center sm:justify-between">
