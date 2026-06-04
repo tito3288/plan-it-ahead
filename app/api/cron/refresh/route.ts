@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
 
 import { getRequiredServerEnv } from "@/lib/env";
+import { generateAllForecasts } from "@/lib/forecast/generate";
 import { runAll } from "@/lib/ingest/runAll";
+
+type RefreshSummary = {
+  errors: Array<{
+    message: string;
+    stage: "forecast";
+  }>;
+  forecast: Awaited<ReturnType<typeof generateAllForecasts>> | null;
+  ingestion: Awaited<ReturnType<typeof runAll>> | null;
+};
 
 function isAuthorized(request: Request) {
   const { CRON_SECRET } = getRequiredServerEnv(["CRON_SECRET"] as const);
@@ -15,9 +25,23 @@ async function handleRefresh(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const summary = await runAll();
+  const summary: RefreshSummary = {
+    errors: [],
+    forecast: null,
+    ingestion: null
+  };
 
-  // TODO(phase-4): generate daily_forecast here after ingestion completes.
+  summary.ingestion = await runAll();
+
+  try {
+    summary.forecast = await generateAllForecasts();
+  } catch (error) {
+    summary.errors.push({
+      message:
+        error instanceof Error ? error.message : "Unknown forecast generation error",
+      stage: "forecast"
+    });
+  }
 
   return NextResponse.json(summary);
 }

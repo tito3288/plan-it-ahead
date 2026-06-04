@@ -13,7 +13,9 @@
     "db:migrate": "supabase db push",
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --linked > types/database.ts",
-    "ingest": "tsx -r tsconfig-paths/register scripts/ingest.ts"
+    "forecast": "tsx -r tsconfig-paths/register scripts/forecast.ts",
+    "ingest": "tsx -r tsconfig-paths/register scripts/ingest.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
@@ -39,6 +41,7 @@
     "tailwindcss": "^3.4.17",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.22.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.8"
   }
 }

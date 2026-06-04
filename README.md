@@ -4,7 +4,7 @@ PlanItAhead is a free web app for families planning U.S. National Park visits be
 
 Tagline: **Know before you go.**
 
-This repository is currently through Phase 3: project foundation, Supabase schema, RLS policies, typed database helpers, launch park seed data, and the server-side data ingestion layer. It intentionally does not include forecast logic, auth screens, live cron scheduling, or planner UI yet.
+This repository is currently through Phase 4: project foundation, Supabase schema, RLS policies, typed database helpers, launch park seed data, server-side data ingestion, and the deterministic forecast engine. It intentionally does not include auth screens, live cron scheduling, or planner UI yet.
 
 ## Tech Stack
 
@@ -69,7 +69,9 @@ npm run db:link
 npm run db:migrate
 npm run db:reset
 npm run db:types
+npm run forecast
 npm run ingest
+npm run test
 ```
 
 Health check:
@@ -250,6 +252,64 @@ Scheduling options:
 - cron-job.org: create a scheduled HTTPS POST to the same endpoint with the same authorization header and daily cadence.
 
 Do not wire live scheduling until deployment hardening in Phase 8.
+
+## Forecast Engine
+
+Phase 4 writes deterministic, explainable forecasts into `daily_forecast`. The engine reads `visitation_history`, `weather_cache`, `parks`, `lots`, and `alerts`, then writes a 14-day rolling window for every active park.
+
+Core forecast code lives in `lib/forecast/`:
+
+- `config.ts`: all tunable thresholds, multipliers, weather weights, hourly curve, confidence rules, and arrive-by buffers.
+- `busyness.ts`: normalized daily score from historical busyness, weekend/holiday effects, and weather.
+- `curve.ts`: 14-slot green/amber/red hourly status curve for 6 AM through 7 PM.
+- `lots.ts`: per-lot arrive-by guidance.
+- `plan.ts`: templated headline and daily plan language.
+- `confidence.ts`: conservative high/medium/low confidence.
+- `generate.ts`: database orchestration and idempotent `daily_forecast` upserts.
+
+Run forecast generation locally:
+
+```bash
+npm run forecast
+```
+
+Expected result after Phase 2 seed data:
+
+- 8 active parks.
+- 14 dates per park.
+- 112 `daily_forecast` rows.
+- No duplicate rows on rerun.
+
+Run unit tests:
+
+```bash
+npm run test
+```
+
+The protected refresh endpoint now runs ingestion first, then forecast generation. Its JSON response contains both stages:
+
+```json
+{
+  "ingestion": {
+    "alerts": {},
+    "facilities": {},
+    "weather": {},
+    "errors": []
+  },
+  "forecast": {
+    "parks": 8,
+    "rows": 112,
+    "windowDays": 14,
+    "confidence": {
+      "high": 70,
+      "medium": 22,
+      "low": 20
+    },
+    "errors": []
+  },
+  "errors": []
+}
+```
 
 ## Railway Deploy
 
