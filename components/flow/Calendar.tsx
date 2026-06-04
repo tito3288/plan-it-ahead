@@ -5,6 +5,11 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import {
+  type DateRange,
+  getNextDateRange,
+  isDateInRange
+} from "@/components/flow/calendarRange";
 import { cn } from "@/lib/utils";
 
 type CalendarProps = {
@@ -15,11 +20,6 @@ type CalendarProps = {
     slug: string;
   };
   today: string;
-};
-
-type DateRange = {
-  end: string | null;
-  start: string | null;
 };
 
 const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -46,7 +46,9 @@ function startOfMonth(date: Date) {
 }
 
 function addMonths(date: Date, months: number) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1));
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1)
+  );
 }
 
 function addDays(date: Date, days: number) {
@@ -114,21 +116,7 @@ export function Calendar({ forecastWindowEnd, park, today }: CalendarProps) {
   function selectDate(date: Date) {
     const iso = toIsoDate(date);
 
-    if (iso < today) {
-      return;
-    }
-
-    if (!range.start || (range.start && range.end)) {
-      setRange({ end: null, start: iso });
-      return;
-    }
-
-    if (iso < range.start) {
-      setRange({ end: range.start, start: iso });
-      return;
-    }
-
-    setRange({ end: iso, start: range.start });
+    setRange((current) => getNextDateRange(current, iso, today));
   }
 
   function goToForecast() {
@@ -181,15 +169,14 @@ export function Calendar({ forecastWindowEnd, park, today }: CalendarProps) {
       <div className="mt-2 grid grid-cols-7 gap-1 sm:gap-2">
         {days.map((date) => {
           const iso = toIsoDate(date);
-          const isOutsideMonth = date.getUTCMonth() !== visibleMonth.getUTCMonth();
+          const isOutsideMonth =
+            date.getUTCMonth() !== visibleMonth.getUTCMonth();
           const isPast = iso < today;
           const isForecastWindow = iso >= today && date <= forecastEndDate;
           const isStart = range.start === iso;
           const isEnd = range.end === iso;
-          const isInRange =
-            Boolean(range.start && range.end) &&
-            iso > (range.start ?? "") &&
-            iso < (range.end ?? "");
+          const isSelected = isStart || isEnd;
+          const isInRange = isDateInRange(range, iso);
 
           return (
             <button
@@ -199,13 +186,18 @@ export function Calendar({ forecastWindowEnd, park, today }: CalendarProps) {
               onClick={() => selectDate(date)}
               className={cn(
                 "relative flex aspect-square min-h-10 flex-col items-center justify-center rounded-xl border text-sm font-semibold transition sm:min-h-12",
-                isOutsideMonth && "text-muted/45",
+                isOutsideMonth && !isSelected && !isInRange && "text-muted/45",
                 isPast
-                  ? "border-transparent text-muted/30"
-                  : "border-border bg-white/45 text-ink hover:border-green hover:bg-green-soft",
-                isForecastWindow && !isPast && "after:absolute after:bottom-1 after:h-1 after:w-5 after:rounded-full after:bg-green/35",
+                  ? "text-muted/30 border-transparent"
+                  : !isSelected &&
+                      !isInRange &&
+                      "border-border bg-white/45 text-ink hover:border-green hover:bg-green-soft",
+                isForecastWindow &&
+                  !isPast &&
+                  "after:bg-green/35 after:absolute after:bottom-1 after:h-1 after:w-5 after:rounded-full",
                 isInRange && "border-green-soft bg-green-soft text-green",
-                (isStart || isEnd) && "border-green bg-green text-white after:bg-white/60"
+                isSelected &&
+                  "border-green bg-green text-white after:bg-white/60 hover:bg-green"
               )}
             >
               <span>{date.getUTCDate()}</span>
@@ -235,7 +227,7 @@ export function Calendar({ forecastWindowEnd, park, today }: CalendarProps) {
 
       <div className="mt-5 grid gap-2 text-sm text-ink-soft sm:grid-cols-2">
         <p>
-          <span className="mr-2 inline-block h-1.5 w-5 rounded-full bg-green/35 align-middle" />
+          <span className="bg-green/35 mr-2 inline-block h-1.5 w-5 rounded-full align-middle" />
           Forecasts available through {formatRangeDate(forecastWindowEnd)}.
         </p>
         {park.requires_reservation ? (
