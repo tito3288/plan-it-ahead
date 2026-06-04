@@ -32,12 +32,14 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
               >
                 My Trips
               </Link>
-              <Link
-                href="/auth/signout"
-                className="text-muted transition hover:text-amber-deep"
-              >
-                Sign out
-              </Link>
+              <form action="/auth/signout" method="post">
+                <button
+                  type="submit"
+                  className="text-muted transition hover:text-amber-deep"
+                >
+                  Sign out
+                </button>
+              </form>
             </>
           ) : (
             <Link
@@ -86,12 +88,14 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
               >
                 My Trips
               </Link>
-              <Link
-                href="/auth/signout"
-                className="text-muted transition hover:text-amber-deep"
-              >
-                Sign out
-              </Link>
+              <form action="/auth/signout" method="post">
+                <button
+                  type="submit"
+                  className="text-muted transition hover:text-amber-deep"
+                >
+                  Sign out
+                </button>
+              </form>
             </>
           ) : (
             <Link

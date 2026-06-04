@@ -34,12 +34,14 @@ export default async function TripsPage() {
           >
             Plan a trip
           </Link>
-          <Link
-            href="/auth/signout"
-            className="text-muted transition hover:text-amber-deep"
-          >
-            Sign out
-          </Link>
+          <form action="/auth/signout" method="post">
+            <button
+              type="submit"
+              className="text-muted transition hover:text-amber-deep"
+            >
+              Sign out
+            </button>
+          </form>
         </div>
       </div>
 
