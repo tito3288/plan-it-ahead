@@ -4,7 +4,11 @@ import { redirect } from "next/navigation";
 import { deleteTripAction } from "@/app/trips/actions";
 import { TripsList } from "@/app/trips/TripsList";
 import { Button } from "@/components/ui/button";
-import { getCurrentUser } from "@/lib/auth/session";
+import {
+  firstName,
+  getCurrentUser,
+  getCurrentUserProfile
+} from "@/lib/auth/session";
 import { getSavedTripsWithParks } from "@/lib/queries/parks";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +20,11 @@ export default async function TripsPage() {
     redirect(`/login?next=${encodeURIComponent("/trips")}`);
   }
 
-  const trips = await getSavedTripsWithParks(user.id);
+  const [trips, profile] = await Promise.all([
+    getSavedTripsWithParks(user.id),
+    getCurrentUserProfile()
+  ]);
+  const name = firstName(profile?.display_name);
 
   return (
     <main className="min-h-screen px-5 py-6 sm:px-8">
@@ -50,10 +58,12 @@ export default async function TripsPage() {
           My Trips
         </p>
         <h1 className="mt-3 font-heading text-4xl font-semibold leading-tight text-ink sm:text-6xl">
-          Saved plans
+          {name ? `${name}'s trail-ready plans` : "Saved plans"}
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-8 text-ink-soft">
-          Revisit forecast windows you have saved for upcoming park days.
+          {name
+            ? "Your saved park days are ready when you are."
+            : "Revisit forecast windows you have saved for upcoming park days."}
         </p>
 
         <div className="mt-8">

@@ -1,11 +1,16 @@
 import { BrandHeader } from "@/components/flow/BrandHeader";
 import { ParkCard } from "@/components/flow/ParkCard";
+import { firstName, getCurrentUserProfile } from "@/lib/auth/session";
 import { getActiveParks } from "@/lib/queries/parks";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlanPage() {
-  const parks = await getActiveParks();
+  const [parks, profile] = await Promise.all([
+    getActiveParks(),
+    getCurrentUserProfile()
+  ]);
+  const name = firstName(profile?.display_name);
 
   return (
     <main className="min-h-screen pb-12">
@@ -16,7 +21,7 @@ export default async function PlanPage() {
           Step 1 of 3
         </p>
         <h1 className="mt-3 font-heading text-4xl font-semibold leading-tight text-ink sm:text-6xl">
-          Where are you headed?
+          {name ? `Hi ${name}, where are you headed?` : "Where are you headed?"}
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-8 text-ink-soft">
           Choose one of the launch parks with trustworthy planning signals.

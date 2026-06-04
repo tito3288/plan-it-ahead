@@ -160,8 +160,10 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
 
     const formData = new FormData(event.currentTarget);
     const emailValue = formData.get("email");
+    const nameValue = formData.get("name");
     const passwordValue = formData.get("password");
     const email = typeof emailValue === "string" ? emailValue.trim() : "";
+    const name = typeof nameValue === "string" ? nameValue.trim() : "";
     const password = typeof passwordValue === "string" ? passwordValue : "";
 
     setSubmittedEmail(email || null);
@@ -174,6 +176,12 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
 
     if (password.length < 8) {
       setPasswordMessage("Use at least 8 characters for your password.");
+      setPasswordStatus("error");
+      return;
+    }
+
+    if (mode === "signup" && !name) {
+      setPasswordMessage("Enter your name.");
       setPasswordStatus("error");
       return;
     }
@@ -203,6 +211,10 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
       email,
       password,
       options: {
+        data: {
+          display_name: name,
+          name
+        },
         emailRedirectTo: buildClientAuthCallbackUrl(nextPath)
       }
     });
@@ -275,6 +287,19 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
         {!showMagicLink ? (
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <input name="nextPath" type="hidden" value={nextPath} />
+            {mode === "signup" ? (
+              <label className="block">
+                <span className="text-sm font-semibold text-ink">Name</span>
+                <input
+                  autoComplete="name"
+                  className="focus:ring-green/15 mt-2 min-h-12 w-full rounded-full border border-border bg-white/75 px-4 text-base text-ink outline-none transition focus:border-green focus:ring-2"
+                  name="name"
+                  placeholder="Bryan"
+                  required
+                  type="text"
+                />
+              </label>
+            ) : null}
             <label className="block">
               <span className="text-sm font-semibold text-ink">Email</span>
               <input
