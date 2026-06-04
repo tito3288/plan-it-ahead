@@ -15,7 +15,6 @@ import type {
   ForecastSaveTrip
 } from "@/components/forecast/types";
 import { SaveTripButton } from "@/components/forecast/SaveTripButton";
-import { formatWeatherSummary } from "@/components/forecast/weatherSummary";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -70,7 +69,6 @@ export function ForecastView({
     [days, selectedDate]
   );
   const forecast = selectedDay?.forecast ?? null;
-  const weatherSummary = formatWeatherSummary(forecast?.weather_summary ?? null);
   const selectedLabel = selectedDay ? formatPlanDay(selectedDay.date) : "";
 
   return (
@@ -117,7 +115,7 @@ export function ForecastView({
                 <div>
                   <div className="inline-flex items-center gap-2 text-sm font-semibold text-amber-deep">
                     <CloudSun className="h-5 w-5" aria-hidden="true" />
-                    {weatherSummary ?? "Forecast estimate"}
+                    {forecast.weather_summary ?? "Forecast estimate"}
                   </div>
                   <h2 className="mt-3 font-heading text-3xl font-semibold leading-tight text-ink sm:text-4xl">
                     {forecast.headline ?? "A steady planning day"}
