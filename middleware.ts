@@ -2,7 +2,6 @@ import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { publicEnv } from "@/lib/env";
-import { normalizeSupabaseCookies } from "@/lib/supabase/cookies";
 import type { Database } from "@/types/database";
 
 export async function middleware(request: NextRequest) {
@@ -23,7 +22,7 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return normalizeSupabaseCookies(request.cookies.getAll());
+          return request.cookies.getAll();
         },
         setAll(cookiesToSet: Parameters<SetAllCookies>[0]) {
           cookiesToSet.forEach(({ name, value }) =>
