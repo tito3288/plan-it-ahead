@@ -14,6 +14,10 @@ export type ParkWithLots = Park & {
   lots: Lot[];
 };
 
+export type SavedTripWithPark = SavedTrip & {
+  park: Park;
+};
+
 export type DateRange = {
   start: string;
   end: string;
@@ -125,11 +129,64 @@ export async function getSavedTrips(userId: string): Promise<SavedTrip[]> {
     .from("saved_trips")
     .select("*")
     .eq("user_id", userId)
-    .order("start_date", { ascending: true });
+    .order("created_at", { ascending: false });
 
   throwIfError(error);
 
   return (data ?? []) as SavedTrip[];
+}
+
+type SavedTripWithParkRow = SavedTrip & {
+  parks: Park;
+};
+
+export async function getSavedTripsWithParks(
+  userId: string
+): Promise<SavedTripWithPark[]> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("saved_trips")
+    .select("*, parks(*)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  throwIfError(error);
+
+  const rows = (data ?? []) as unknown as SavedTripWithParkRow[];
+
+  return rows.map(({ parks, ...trip }) => ({
+    ...trip,
+    park: parks
+  }));
+}
+
+export async function findSavedTrip({
+  endDate,
+  parkId,
+  startDate,
+  userId
+}: {
+  endDate: string | null;
+  parkId: string;
+  startDate: string;
+  userId: string;
+}): Promise<SavedTrip | null> {
+  const supabase = createClient();
+  let query = supabase
+    .from("saved_trips")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("park_id", parkId)
+    .eq("start_date", startDate);
+
+  query = endDate ? query.eq("end_date", endDate) : query.is("end_date", null);
+
+  const { data, error } = await query.maybeSingle();
+
+  throwIfError(error);
+
+  return data as SavedTrip | null;
 }
 
 export async function createSavedTrip(
@@ -140,10 +197,7 @@ export async function createSavedTrip(
     "saved_trips"
   ) as unknown as SavedTripInsertQuery;
 
-  const { data, error } = await savedTrips
-    .insert(trip)
-    .select("*")
-    .single();
+  const { data, error } = await savedTrips.insert(trip).select("*").single();
 
   throwIfError(error);
 

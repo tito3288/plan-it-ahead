@@ -11,8 +11,10 @@ import { LotCard } from "@/components/forecast/LotCard";
 import type {
   ForecastAlert,
   ForecastDay,
-  ForecastPark
+  ForecastPark,
+  ForecastSaveTrip
 } from "@/components/forecast/types";
+import { SaveTripButton } from "@/components/forecast/SaveTripButton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +23,7 @@ type ForecastViewProps = {
   dateRangeLabel: string;
   days: ForecastDay[];
   park: ForecastPark;
+  saveTrip: ForecastSaveTrip;
 };
 
 function formatTabDate(date: string) {
@@ -57,7 +60,8 @@ export function ForecastView({
   alerts,
   dateRangeLabel,
   days,
-  park
+  park,
+  saveTrip
 }: ForecastViewProps) {
   const [selectedDate, setSelectedDate] = useState(days[0]?.date ?? "");
   const selectedDay = useMemo(
@@ -156,6 +160,16 @@ export function ForecastView({
       </div>
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <SaveTripButton
+          endDate={saveTrip.endDate}
+          forecastPath={saveTrip.forecastPath}
+          initialSaved={saveTrip.initialSaved}
+          isSignedIn={saveTrip.isSignedIn}
+          loginHref={saveTrip.loginHref}
+          parkId={park.id}
+          startDate={saveTrip.startDate}
+          title={saveTrip.title}
+        />
         <Button href="/plan" variant="secondary">
           Choose another park
         </Button>
@@ -163,10 +177,6 @@ export function ForecastView({
           Edit dates
         </Button>
       </div>
-
-      <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-muted">
-        TODO Phase 7: Save this trip
-      </p>
     </section>
   );
 }

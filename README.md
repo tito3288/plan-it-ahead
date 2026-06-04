@@ -4,7 +4,7 @@ PlanItAhead is a free web app for families planning U.S. National Park visits be
 
 Tagline: **Know before you go.**
 
-This repository is currently through Phase 4: project foundation, Supabase schema, RLS policies, typed database helpers, launch park seed data, server-side data ingestion, and the deterministic forecast engine. It intentionally does not include auth screens, live cron scheduling, or planner UI yet.
+This repository is currently through Phase 7: project foundation, Supabase schema, RLS policies, typed database helpers, launch park seed data, server-side data ingestion, deterministic forecasts, the planning flow, the forecast page, Supabase Auth, and saved trips. It intentionally does not include production deploy hardening or live cron scheduling yet.
 
 ## Tech Stack
 
@@ -45,16 +45,40 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Environment Variables
 
-| Variable | Scope | Purpose |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Browser/server | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser/server | Supabase anonymous key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server only | Privileged Supabase writes for ingestion; never expose to client code |
-| `NPS_API_KEY` | Server only | Free National Park Service API key from developer.nps.gov |
-| `RIDB_API_KEY` | Server only | Free Recreation.gov RIDB key from ridb.recreation.gov/profile |
-| `CRON_SECRET` | Server only | Long random string required by `/api/cron/refresh` |
+| Variable                        | Scope          | Purpose                                                               |
+| ------------------------------- | -------------- | --------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Browser/server | Supabase project URL                                                  |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser/server | Supabase anonymous key                                                |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Server only    | Privileged Supabase writes for ingestion; never expose to client code |
+| `NPS_API_KEY`                   | Server only    | Free National Park Service API key from developer.nps.gov             |
+| `RIDB_API_KEY`                  | Server only    | Free Recreation.gov RIDB key from ridb.recreation.gov/profile         |
+| `CRON_SECRET`                   | Server only    | Long random string required by `/api/cron/refresh`                    |
 
 `lib/env.ts` validates the current environment with zod. Public env can be imported by browser-safe code; server-only values should be read through server modules only.
+
+## Auth and Saved Trips
+
+PlanItAhead uses Supabase Auth passwordless email magic links through `@supabase/ssr`.
+
+Routes:
+
+- `/login`: enter an email and receive a magic link.
+- `/auth/callback`: exchanges the magic-link code for a cookie-based session.
+- `/auth/signout`: clears the Supabase session and returns home.
+- `/trips`: authenticated saved-trip list with delete actions.
+
+The App Router session is refreshed by `middleware.ts`. User data access uses the authenticated Supabase client, so `saved_trips` RLS policies enforce that users can only read, create, update, or delete their own rows. The service-role client is reserved for ingestion and forecast generation only.
+
+Local magic-link testing:
+
+1. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`.
+2. In Supabase Auth settings, include `http://localhost:3000` as the Site URL or redirect allowlist entry.
+3. Run `npm run dev`, open `/login`, enter your email, and follow the link from the email.
+4. If email delivery is slow or blocked during testing, check Supabase Auth email rate limits before debugging app code.
+
+Production email note: Supabase default auth emails are fine for testing but rate-limited. At deploy time, configure custom SMTP in Supabase Auth settings. The owner plans to use Resend SMTP in Phase 8.
+
+Production redirect note: Supabase Auth redirect allowlists must include localhost for development and the production domain, including `https://planitahead.com/auth/callback` when the site is deployed.
 
 ## Commands
 

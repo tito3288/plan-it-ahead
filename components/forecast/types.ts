@@ -28,10 +28,21 @@ export type ForecastDay = {
 
 export type ForecastPark = {
   full_name: string;
+  id: string;
   name: string;
   requires_reservation: boolean;
   reservation_note: string | null;
   slug: string;
+};
+
+export type ForecastSaveTrip = {
+  endDate: string;
+  forecastPath: string;
+  initialSaved: boolean;
+  isSignedIn: boolean;
+  loginHref: string;
+  startDate: string;
+  title: string;
 };
 
 export type ForecastAlert = {

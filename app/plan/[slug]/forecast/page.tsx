@@ -12,7 +12,9 @@ import type {
   ForecastSource
 } from "@/components/forecast/types";
 import type { ForecastStatus } from "@/lib/forecast/config";
+import { getCurrentUser } from "@/lib/auth/session";
 import {
+  findSavedTrip,
   getForecast,
   getParkAlerts,
   getParkBySlug,
@@ -92,6 +94,10 @@ function formatDateRangeLabel(start: string, end: string) {
   }
 
   return `${formatDateLabel(start)} – ${formatDateLabel(end)}`;
+}
+
+function loginHref(next: string) {
+  return `/login?next=${encodeURIComponent(next)}`;
 }
 
 function isRecord(value: Json): value is { [key: string]: Json | undefined } {
@@ -214,9 +220,19 @@ export default async function ForecastPage({
   const start = toIsoDate(startDate);
   const end = toIsoDate(endDate);
   const dates = buildDateRange(startDate, endDate);
-  const [forecastRows, alerts] = await Promise.all([
+  const user = await getCurrentUser();
+  const normalizedEnd = end !== start ? end : null;
+  const [forecastRows, alerts, savedTrip] = await Promise.all([
     getForecast(park.id, { end, start }),
-    getParkAlerts(park.id)
+    getParkAlerts(park.id),
+    user
+      ? findSavedTrip({
+          endDate: normalizedEnd,
+          parkId: park.id,
+          startDate: start,
+          userId: user.id
+        })
+      : Promise.resolve(null)
   ]);
   const forecastByDate = new Map(
     forecastRows.map((row) => [row.forecast_date, adaptForecast(row)])
@@ -227,6 +243,7 @@ export default async function ForecastPage({
   }));
   const forecastPark: ForecastPark = {
     full_name: park.full_name,
+    id: park.id,
     name: park.name,
     requires_reservation: park.requires_reservation,
     reservation_note: park.reservation_note,
@@ -248,6 +265,17 @@ export default async function ForecastPage({
         dateRangeLabel={formatDateRangeLabel(start, end)}
         days={forecastDays}
         park={forecastPark}
+        saveTrip={{
+          endDate: end,
+          forecastPath: `/plan/${park.slug}/forecast?start=${start}&end=${end}`,
+          initialSaved: Boolean(savedTrip),
+          isSignedIn: Boolean(user),
+          loginHref: loginHref(
+            `/plan/${park.slug}/forecast?start=${start}&end=${end}`
+          ),
+          startDate: start,
+          title: `${park.name} · ${formatDateRangeLabel(start, end)}`
+        }}
       />
     </main>
   );
