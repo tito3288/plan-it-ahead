@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getCurrentUser } from "@/lib/auth/session";
+
+export const dynamic = "force-dynamic";
 
 type HomePageProps = {
   searchParams: Record<string, string | string[] | undefined>;
@@ -26,11 +29,17 @@ function callbackQuery(searchParams: HomePageProps["searchParams"]) {
   return params.toString();
 }
 
-export default function HomePage({ searchParams }: HomePageProps) {
+export default async function HomePage({ searchParams }: HomePageProps) {
   if (searchParams.code) {
     const query = callbackQuery(searchParams);
 
     redirect(`/auth/callback${query ? `?${query}` : ""}`);
+  }
+
+  const user = await getCurrentUser();
+
+  if (user) {
+    redirect("/plan");
   }
 
   return (

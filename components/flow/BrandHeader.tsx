@@ -43,7 +43,7 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
               href="/login"
               className="text-green transition hover:text-amber-deep"
             >
-              Sign in
+              Log in
             </Link>
           )}
         </div>
@@ -95,7 +95,7 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
               href="/login"
               className="text-green transition hover:text-amber-deep"
             >
-              Sign in
+              Log in
             </Link>
           )}
         </div>

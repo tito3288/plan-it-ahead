@@ -1,8 +1,7 @@
 "use client";
 
 import { CheckCircle2, KeyRound, Mail } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
 import {
@@ -110,7 +109,6 @@ function SuccessState({
 }
 
 export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
-  const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [showMagicLink, setShowMagicLink] = useState(false);
   const [signInState, signInAction] = useFormState(
@@ -127,20 +125,6 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
   );
   const passwordState = mode === "signin" ? signInState : signUpState;
   const passwordAction = mode === "signin" ? signInAction : signUpAction;
-
-  useEffect(() => {
-    if (signInState.status === "signedIn" && signInState.redirectTo) {
-      router.replace(signInState.redirectTo);
-      router.refresh();
-    }
-  }, [router, signInState.redirectTo, signInState.status]);
-
-  useEffect(() => {
-    if (signUpState.status === "signedIn" && signUpState.redirectTo) {
-      router.replace(signUpState.redirectTo);
-      router.refresh();
-    }
-  }, [router, signUpState.redirectTo, signUpState.status]);
 
   if (signUpState.status === "sent") {
     return (

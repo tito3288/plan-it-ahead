@@ -1,5 +1,7 @@
 "use server";
 
+import { redirect } from "next/navigation";
+
 import { buildAuthCallbackUrl } from "@/lib/auth/redirects";
 import { safeRedirectPath } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -106,12 +108,7 @@ export async function signInWithPasswordAction(
     };
   }
 
-  return {
-    message: "Signed in.",
-    redirectTo: nextPath,
-    status: "signedIn",
-    submittedEmail: email
-  };
+  redirect(nextPath);
 }
 
 export async function signUpWithPasswordAction(
@@ -162,12 +159,7 @@ export async function signUpWithPasswordAction(
   }
 
   if (data.session) {
-    return {
-      message: "Account created.",
-      redirectTo: nextPath,
-      status: "signedIn",
-      submittedEmail: email
-    };
+    redirect(nextPath);
   }
 
   return {
