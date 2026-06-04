@@ -1,17 +1,18 @@
 "use client";
 
 import { CheckCircle2, KeyRound, Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
+import type { FormEvent } from "react";
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
 import {
   sendMagicLinkAction,
-  signInWithPasswordAction,
-  signUpWithPasswordAction,
-  type LoginState,
-  type PasswordAuthState
+  type LoginState
 } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
+import { getSiteUrl } from "@/lib/env";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type LoginFormProps = {
@@ -21,16 +22,7 @@ type LoginFormProps = {
 
 type AuthMode = "signin" | "signup";
 
-function passwordInitialState(
-  errorMessage: string | null
-): PasswordAuthState {
-  return {
-    message: errorMessage,
-    redirectTo: null,
-    status: errorMessage ? "error" : "idle",
-    submittedEmail: null
-  };
-}
+type PasswordStatus = "idle" | "sent" | "error" | "submitting";
 
 const magicInitialState: LoginState = {
   message: null,
@@ -39,12 +31,53 @@ const magicInitialState: LoginState = {
   submittedEmail: null
 };
 
-function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
+function buildClientAuthCallbackUrl(nextPath: string) {
+  const url = new URL("/auth/callback", getSiteUrl());
+  url.searchParams.set("next", nextPath);
+
+  return url.toString();
+}
+
+function authErrorMessage(message: string) {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("email not confirmed")) {
+    return "Please confirm your email first, then log in.";
+  }
+
+  if (
+    normalized.includes("invalid login credentials") ||
+    normalized.includes("invalid credentials")
+  ) {
+    return "Email or password is incorrect.";
+  }
+
+  if (normalized.includes("already registered")) {
+    return "That email already has an account. Try logging in instead.";
+  }
+
+  if (normalized.includes("password")) {
+    return "Check your password and try again.";
+  }
+
+  return "We could not finish that request. Please try again.";
+}
+
+function SubmitButton({
+  label,
+  pendingLabel,
+  pendingOverride = false
+}: {
+  label: string;
+  pendingLabel: string;
+  pendingOverride?: boolean;
+}) {
   const { pending } = useFormStatus();
+  const isPending = pending || pendingOverride;
 
   return (
-    <Button className="w-full" disabled={pending} type="submit">
-      {pending ? pendingLabel : label}
+    <Button className="w-full" disabled={isPending} type="submit">
+      {isPending ? pendingLabel : label}
     </Button>
   );
 }
@@ -109,28 +142,95 @@ function SuccessState({
 }
 
 export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
+  const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [showMagicLink, setShowMagicLink] = useState(false);
-  const [signInState, signInAction] = useFormState(
-    signInWithPasswordAction,
-    passwordInitialState(errorMessage)
+  const [passwordStatus, setPasswordStatus] = useState<PasswordStatus>(
+    errorMessage ? "error" : "idle"
   );
-  const [signUpState, signUpAction] = useFormState(
-    signUpWithPasswordAction,
-    passwordInitialState(null)
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(
+    errorMessage
   );
+  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
   const [magicState, magicAction] = useFormState(
     sendMagicLinkAction,
     magicInitialState
   );
-  const passwordState = mode === "signin" ? signInState : signUpState;
-  const passwordAction = mode === "signin" ? signInAction : signUpAction;
 
-  if (signUpState.status === "sent") {
+  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const emailValue = formData.get("email");
+    const passwordValue = formData.get("password");
+    const email = typeof emailValue === "string" ? emailValue.trim() : "";
+    const password = typeof passwordValue === "string" ? passwordValue : "";
+
+    setSubmittedEmail(email || null);
+
+    if (!email || !email.includes("@")) {
+      setPasswordMessage("Enter a valid email address.");
+      setPasswordStatus("error");
+      return;
+    }
+
+    if (password.length < 8) {
+      setPasswordMessage("Use at least 8 characters for your password.");
+      setPasswordStatus("error");
+      return;
+    }
+
+    setPasswordMessage(null);
+    setPasswordStatus("submitting");
+
+    const supabase = createClient();
+
+    if (mode === "signin") {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        setPasswordMessage(authErrorMessage(error.message));
+        setPasswordStatus("error");
+        return;
+      }
+
+      router.replace(nextPath);
+      router.refresh();
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: buildClientAuthCallbackUrl(nextPath)
+      }
+    });
+
+    if (error) {
+      setPasswordMessage(authErrorMessage(error.message));
+      setPasswordStatus("error");
+      return;
+    }
+
+    if (data.session) {
+      router.replace(nextPath);
+      router.refresh();
+      return;
+    }
+
+    setPasswordMessage("Check your email to confirm your account.");
+    setPasswordStatus("sent");
+  }
+
+  if (passwordStatus === "sent") {
     return (
       <div className="rounded-[18px] border border-border bg-white/70 p-5 shadow-soft backdrop-blur-sm sm:p-6">
         <SuccessState
-          email={signUpState.submittedEmail}
+          email={submittedEmail}
           message="Open the confirmation link to activate your account and finish signing in."
           title="Confirm your email"
           type="confirm"
@@ -177,7 +277,7 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
 
       <div className="mt-6">
         {!showMagicLink ? (
-          <form action={passwordAction} className="space-y-4">
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <input name="nextPath" type="hidden" value={nextPath} />
             <label className="block">
               <span className="text-sm font-semibold text-ink">Email</span>
@@ -215,6 +315,7 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
             <SubmitButton
               label={mode === "signin" ? "Log in" : "Sign up"}
               pendingLabel={mode === "signin" ? "Logging in..." : "Signing up..."}
+              pendingOverride={passwordStatus === "submitting"}
             />
 
             <div className="flex flex-col gap-2 text-sm font-semibold sm:flex-row sm:items-center sm:justify-between">
@@ -234,9 +335,9 @@ export function LoginForm({ errorMessage, nextPath }: LoginFormProps) {
               </a>
             </div>
 
-            {passwordState.message ? (
+            {passwordMessage ? (
               <p className="text-sm font-semibold text-red">
-                {passwordState.message}
+                {passwordMessage}
               </p>
             ) : null}
           </form>
