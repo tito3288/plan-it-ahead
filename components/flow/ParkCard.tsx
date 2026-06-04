@@ -1,5 +1,4 @@
 import { Ticket } from "lucide-react";
-import Link from "next/link";
 
 import type { Park } from "@/lib/queries/parks";
 
@@ -21,9 +20,8 @@ function dataNote(dataTier: number) {
 
 export function ParkCard({ park }: ParkCardProps) {
   return (
-    <Link
+    <a
       href={`/plan/${park.slug}`}
-      prefetch={false}
       className="group overflow-hidden rounded-2xl border border-border bg-white/70 shadow-soft backdrop-blur-sm transition duration-200 hover:-translate-y-1 hover:border-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
     >
       <div
@@ -67,6 +65,6 @@ export function ParkCard({ park }: ParkCardProps) {
           </p>
         ) : null}
       </div>
-    </Link>
+    </a>
   );
 }

@@ -1,6 +1,10 @@
+import { unstable_noStore as noStore } from "next/cache";
+
 import { createClient } from "@/lib/supabase/server";
 
 export async function getCurrentUser() {
+  noStore();
+
   const supabase = createClient();
   const {
     data: { user },
