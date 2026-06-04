@@ -3,6 +3,7 @@ import type { SetAllCookies } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 import { publicEnv } from "@/lib/env";
+import { normalizeSupabaseCookies } from "@/lib/supabase/cookies";
 import type { Database } from "@/types/database";
 
 type ServerClient = ReturnType<typeof createServerClient<Database>>;
@@ -25,7 +26,7 @@ export function createClient(): ServerClient {
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll();
+          return normalizeSupabaseCookies(cookieStore.getAll());
         },
         setAll(cookiesToSet: Parameters<SetAllCookies>[0]) {
           try {
