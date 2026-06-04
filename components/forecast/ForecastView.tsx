@@ -17,6 +17,7 @@ import type {
 import { SaveTripButton } from "@/components/forecast/SaveTripButton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getWeatherCodeMeta } from "@/lib/weather/weatherCode";
 
 type ForecastViewProps = {
   alerts: ForecastAlert[];
@@ -42,6 +43,20 @@ function formatPlanDay(date: string) {
     timeZone: "UTC",
     weekday: "long"
   }).format(new Date(`${date}T00:00:00Z`));
+}
+
+function formatSeasonalPatternNote(date: string) {
+  const value = new Date(`${date}T00:00:00Z`);
+  const month = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    timeZone: "UTC"
+  }).format(value);
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    weekday: "long"
+  }).format(value);
+
+  return `Based on typical ${month} ${weekday} patterns — weather not available this far out.`;
 }
 
 function sourceNote(source: string) {
@@ -70,6 +85,18 @@ export function ForecastView({
   );
   const forecast = selectedDay?.forecast ?? null;
   const selectedLabel = selectedDay ? formatPlanDay(selectedDay.date) : "";
+  const weatherMeta = forecast
+    ? getWeatherCodeMeta(forecast.weather_code)
+    : null;
+  const WeatherIcon = forecast?.is_seasonal_estimate
+    ? CloudSun
+    : weatherMeta?.icon ?? CloudSun;
+  const weatherText =
+    forecast && selectedDay?.date
+      ? forecast.is_seasonal_estimate
+        ? formatSeasonalPatternNote(selectedDay.date)
+        : forecast.weather_summary ?? "Forecast estimate"
+      : "Forecast estimate";
 
   return (
     <section className="mx-auto w-full max-w-6xl px-5 pt-6 sm:px-8">
@@ -114,8 +141,8 @@ export function ForecastView({
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="inline-flex items-center gap-2 text-sm font-semibold text-amber-deep">
-                    <CloudSun className="h-5 w-5" aria-hidden="true" />
-                    {forecast.weather_summary ?? "Forecast estimate"}
+                    <WeatherIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                    <span>{weatherText}</span>
                   </div>
                   <h2 className="mt-3 font-heading text-3xl font-semibold leading-tight text-ink sm:text-4xl">
                     {forecast.headline ?? "A steady planning day"}
@@ -133,7 +160,10 @@ export function ForecastView({
               </div>
             </div>
 
-            <HourlyBar statuses={forecast.hourly_status} />
+            <HourlyBar
+              isTypicalPattern={forecast.is_seasonal_estimate}
+              statuses={forecast.hourly_status}
+            />
 
             <div className="grid gap-4 lg:grid-cols-2">
               {forecast.lot_predictions.map((prediction) => (

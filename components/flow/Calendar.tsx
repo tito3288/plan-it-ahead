@@ -11,6 +11,7 @@ import {
   isDateInRange
 } from "@/components/flow/calendarRange";
 import { cn } from "@/lib/utils";
+import { getWeatherCodeMeta } from "@/lib/weather/weatherCode";
 
 type CalendarProps = {
   forecastWindowEnd: string;
@@ -20,6 +21,12 @@ type CalendarProps = {
     slug: string;
   };
   today: string;
+  weatherRows: Array<{
+    forecast_date: string;
+    temp_high: number | null;
+    weather_code: number | null;
+  }>;
+  weatherWindowEnd: string;
 };
 
 const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -98,12 +105,22 @@ function isWeekend(date: Date) {
   return day === 0 || day === 6;
 }
 
-export function Calendar({ forecastWindowEnd, park, today }: CalendarProps) {
+export function Calendar({
+  forecastWindowEnd,
+  park,
+  today,
+  weatherRows,
+  weatherWindowEnd
+}: CalendarProps) {
   const router = useRouter();
   const todayDate = useMemo(() => parseDate(today), [today]);
   const forecastEndDate = useMemo(
     () => parseDate(forecastWindowEnd),
     [forecastWindowEnd]
+  );
+  const weatherByDate = useMemo(
+    () => new Map(weatherRows.map((row) => [row.forecast_date, row])),
+    [weatherRows]
   );
   const [visibleMonth, setVisibleMonth] = useState(startOfMonth(todayDate));
   const [range, setRange] = useState<DateRange>({
@@ -177,6 +194,12 @@ export function Calendar({ forecastWindowEnd, park, today }: CalendarProps) {
           const isEnd = range.end === iso;
           const isSelected = isStart || isEnd;
           const isInRange = isDateInRange(range, iso);
+          const weather = weatherByDate.get(iso);
+          const weatherMeta = weather
+            ? getWeatherCodeMeta(weather.weather_code)
+            : null;
+          const WeatherIcon = weatherMeta?.icon;
+          const tempHigh = weather?.temp_high ?? null;
 
           return (
             <button
@@ -200,11 +223,31 @@ export function Calendar({ forecastWindowEnd, park, today }: CalendarProps) {
                   "border-green bg-green text-white after:bg-white/60 hover:bg-green"
               )}
             >
+              {WeatherIcon && !isPast ? (
+                <span
+                  className={cn(
+                    "absolute left-1 top-1 inline-flex max-w-[calc(100%-0.5rem)] items-center gap-0.5 rounded-full bg-white/80 px-1.5 py-0.5 text-[0.58rem] font-bold leading-none text-green shadow-sm sm:left-1.5 sm:top-1.5 sm:text-[0.65rem]",
+                    (isStart || isEnd) && "bg-white/95 text-green"
+                  )}
+                  aria-label={`${weatherMeta.label}${
+                    tempHigh === null
+                      ? ""
+                      : `, ${Math.round(tempHigh)} degrees`
+                  }`}
+                >
+                  <WeatherIcon className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  {tempHigh !== null ? (
+                    <span className="hidden sm:inline">
+                      {Math.round(tempHigh)}°
+                    </span>
+                  ) : null}
+                </span>
+              ) : null}
               <span>{date.getUTCDate()}</span>
               {park.requires_reservation && isWeekend(date) && !isPast ? (
                 <span
                   className={cn(
-                    "absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-amber",
+                    "absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-amber",
                     (isStart || isEnd) && "bg-amber-soft"
                   )}
                   aria-hidden="true"
@@ -228,7 +271,8 @@ export function Calendar({ forecastWindowEnd, park, today }: CalendarProps) {
       <div className="mt-5 grid gap-2 text-sm text-ink-soft sm:grid-cols-2">
         <p>
           <span className="bg-green/35 mr-2 inline-block h-1.5 w-5 rounded-full align-middle" />
-          Forecasts available through {formatRangeDate(forecastWindowEnd)}.
+          Detailed weather through {formatRangeDate(weatherWindowEnd)};
+          seasonal estimates through {formatRangeDate(forecastWindowEnd)}.
         </p>
         {park.requires_reservation ? (
           <p>

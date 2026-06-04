@@ -11,14 +11,16 @@ import type {
   ForecastPark,
   ForecastSource
 } from "@/components/forecast/types";
-import type { ForecastStatus } from "@/lib/forecast/config";
+import { forecastConfig, type ForecastStatus } from "@/lib/forecast/config";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   findSavedTrip,
   getForecast,
   getParkAlerts,
   getParkBySlug,
-  type DailyForecast
+  getParkWeather,
+  type DailyForecast,
+  type WeatherCache
 } from "@/lib/queries/parks";
 import type { Json } from "@/types/database";
 
@@ -34,7 +36,7 @@ type ForecastPageProps = {
   };
 };
 
-const maxRangeDays = 31;
+const maxRangeDays = forecastConfig.forecastWindowDays;
 
 function parseIsoDate(date: string | undefined) {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -63,6 +65,14 @@ function addDays(date: Date, days: number) {
   const next = new Date(date);
   next.setUTCDate(next.getUTCDate() + days);
   return next;
+}
+
+function todayUtc() {
+  const now = new Date();
+
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  );
 }
 
 function daysBetween(start: Date, end: Date) {
@@ -176,7 +186,11 @@ function parseLotPredictions(value: Json): ForecastLotPrediction[] {
   });
 }
 
-function adaptForecast(row: DailyForecast): ForecastDayData | null {
+function adaptForecast(
+  row: DailyForecast,
+  weather: WeatherCache | undefined,
+  weatherWindowEnd: string
+): ForecastDayData | null {
   const hourlyStatus = row.hourly_status.filter(isForecastStatus);
 
   if (hourlyStatus.length !== 14) {
@@ -188,8 +202,11 @@ function adaptForecast(row: DailyForecast): ForecastDayData | null {
     daily_plan: parseDailyPlan(row.daily_plan),
     headline: row.headline,
     hourly_status: hourlyStatus,
+    is_seasonal_estimate:
+      row.weather_summary === null && row.forecast_date > weatherWindowEnd,
     lot_predictions: parseLotPredictions(row.lot_predictions),
     source: parseSource(row.source),
+    weather_code: weather?.weather_code ?? null,
     weather_summary: row.weather_summary
   };
 }
@@ -220,11 +237,20 @@ export default async function ForecastPage({
   const start = toIsoDate(startDate);
   const end = toIsoDate(endDate);
   const dates = buildDateRange(startDate, endDate);
+  const today = todayUtc();
+  const weatherWindowEnd = toIsoDate(
+    addDays(today, forecastConfig.weatherHorizonDays - 1)
+  );
+  const weatherQueryEnd = end < weatherWindowEnd ? end : weatherWindowEnd;
   const user = await getCurrentUser();
   const normalizedEnd = end !== start ? end : null;
-  const [forecastRows, alerts, savedTrip] = await Promise.all([
+  const shouldFetchWeather = start <= weatherWindowEnd;
+  const [forecastRows, alerts, weatherRows, savedTrip] = await Promise.all([
     getForecast(park.id, { end, start }),
     getParkAlerts(park.id),
+    shouldFetchWeather
+      ? getParkWeather(park.id, { end: weatherQueryEnd, start })
+      : Promise.resolve([]),
     user
       ? findSavedTrip({
           endDate: normalizedEnd,
@@ -234,8 +260,14 @@ export default async function ForecastPage({
         })
       : Promise.resolve(null)
   ]);
+  const weatherByDate = new Map(
+    weatherRows.map((row) => [row.forecast_date, row])
+  );
   const forecastByDate = new Map(
-    forecastRows.map((row) => [row.forecast_date, adaptForecast(row)])
+    forecastRows.map((row) => [
+      row.forecast_date,
+      adaptForecast(row, weatherByDate.get(row.forecast_date), weatherWindowEnd)
+    ])
   );
   const forecastDays: ForecastDay[] = dates.map((date) => ({
     date,

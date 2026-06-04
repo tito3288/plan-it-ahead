@@ -1,6 +1,9 @@
 export const forecastConfig = {
   // Forecast window written by generateAllForecasts.
-  forecastWindowDays: 14,
+  forecastWindowDays: 90,
+
+  // Open-Meteo is only fetched for the near-term daily horizon.
+  weatherHorizonDays: 14,
 
   // Hour labels map to hourly_status slots: 6a through 7p.
   hourlySlots: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
@@ -45,7 +48,8 @@ export const forecastConfig = {
   // Confidence thresholds are conservative by design.
   confidence: {
     nearTermDays: 7,
-    farOutDays: 10
+    farOutDays: 10,
+    noWeatherMediumDays: 30
   }
 } as const;
 

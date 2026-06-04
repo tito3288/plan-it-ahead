@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { computeDailyScore } from "@/lib/forecast/busyness";
 import { computeConfidence } from "@/lib/forecast/confidence";
+import { forecastConfig } from "@/lib/forecast/config";
 import { buildHourlyStatus } from "@/lib/forecast/curve";
+import {
+  buildForecastDateWindow,
+  buildForecastRow,
+  type ParkForecastContext
+} from "@/lib/forecast/generate";
 import { predictLots, type ForecastLot } from "@/lib/forecast/lots";
 import { buildDailyPlan, buildHeadline } from "@/lib/forecast/plan";
 
@@ -76,6 +82,15 @@ describe("computeDailyScore", () => {
   });
 });
 
+describe("forecast window", () => {
+  it("builds the configured full forecast window", () => {
+    expect(forecastConfig.forecastWindowDays).toBe(90);
+    expect(buildForecastDateWindow()).toHaveLength(
+      forecastConfig.forecastWindowDays
+    );
+  });
+});
+
 describe("buildHourlyStatus", () => {
   it("returns 14 slots and only status values", () => {
     const statuses = buildHourlyStatus(0.7);
@@ -129,14 +144,34 @@ describe("computeConfidence", () => {
     ).toBe("high");
   });
 
-  it("drops for far-out weatherless forecasts", () => {
+  it("is medium for weatherless forecasts up to 30 days out", () => {
     expect(
       computeConfidence({
-        dataTier: 3,
-        daysOut: 13,
+        dataTier: 1,
+        daysOut: 30,
+        hasWeather: false
+      })
+    ).toBe("medium");
+  });
+
+  it("drops to low for weatherless forecasts more than 30 days out", () => {
+    expect(
+      computeConfidence({
+        dataTier: 1,
+        daysOut: 31,
         hasWeather: false
       })
     ).toBe("low");
+  });
+
+  it("never returns high without weather", () => {
+    expect(
+      computeConfidence({
+        dataTier: 1,
+        daysOut: 1,
+        hasWeather: false
+      })
+    ).not.toBe("high");
   });
 });
 
@@ -194,5 +229,48 @@ describe("realistic fixture cases", () => {
     expect(predictions[0].arrive_by).toBe("Anytime");
     expect(buildHeadline(score, 2)).toContain("Calmer");
     expect(plan.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("produces a far-out busy summer Saturday seasonal estimate", () => {
+    const dates = Array.from({ length: 90 }, (_, index) => {
+      const date = new Date(Date.UTC(2026, 5, 1 + index));
+
+      return date.toISOString().slice(0, 10);
+    });
+    const context = {
+      alertsCount: 0,
+      history: [
+        {
+          dow: 6,
+          month: 7,
+          relative_busyness: 0.92
+        }
+      ],
+      lots,
+      park: {
+        data_tier: 1,
+        id: "park-1",
+        requires_reservation: true,
+        slug: "glacier",
+        timezone: "America/Denver"
+      },
+      weather: [
+        {
+          forecast_date: "2026-07-18",
+          precip_chance: 0,
+          summary: "Weather should be ignored outside the horizon",
+          temp_high: 82,
+          temp_low: 55,
+          weather_code: 0
+        }
+      ]
+    } satisfies ParkForecastContext;
+
+    const row = buildForecastRow(context, "2026-07-18", dates);
+
+    expect(row.weather_summary).toBeNull();
+    expect(row.confidence).toBe("low");
+    expect(row.headline).toContain("Busiest");
+    expect(row.lot_predictions).not.toBeNull();
   });
 });

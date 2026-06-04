@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 
 import { BrandHeader } from "@/components/flow/BrandHeader";
 import { Calendar } from "@/components/flow/Calendar";
-import { getParkBySlug } from "@/lib/queries/parks";
+import { forecastConfig } from "@/lib/forecast/config";
+import { getParkBySlug, getParkWeather } from "@/lib/queries/parks";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,16 @@ export default async function ParkCalendarPage({
 
   const today = todayUtc();
   const todayIso = toIsoDate(today);
-  const forecastWindowEnd = toIsoDate(addDays(today, 13));
+  const forecastWindowEnd = toIsoDate(
+    addDays(today, forecastConfig.forecastWindowDays - 1)
+  );
+  const weatherWindowEnd = toIsoDate(
+    addDays(today, forecastConfig.weatherHorizonDays - 1)
+  );
+  const weatherRows = await getParkWeather(park.id, {
+    end: weatherWindowEnd,
+    start: todayIso
+  });
 
   return (
     <main className="min-h-screen pb-12">
@@ -76,6 +86,12 @@ export default async function ParkCalendarPage({
               slug: park.slug
             }}
             today={todayIso}
+            weatherRows={weatherRows.map((row) => ({
+              forecast_date: row.forecast_date,
+              temp_high: row.temp_high,
+              weather_code: row.weather_code
+            }))}
+            weatherWindowEnd={weatherWindowEnd}
           />
         </div>
       </section>

@@ -6,6 +6,7 @@ import type { Tables, TablesInsert } from "@/types/database";
 export type Park = Tables<"parks">;
 export type Lot = Tables<"lots">;
 export type DailyForecast = Tables<"daily_forecast">;
+export type WeatherCache = Tables<"weather_cache">;
 export type Alert = Tables<"alerts">;
 export type SavedTrip = Tables<"saved_trips">;
 export type SavedTripInsert = TablesInsert<"saved_trips">;
@@ -106,6 +107,25 @@ export async function getForecast(
   throwIfError(error);
 
   return (data ?? []) as DailyForecast[];
+}
+
+export async function getParkWeather(
+  parkId: string,
+  dateRange: DateRange
+): Promise<WeatherCache[]> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("weather_cache")
+    .select("*")
+    .eq("park_id", parkId)
+    .gte("forecast_date", dateRange.start)
+    .lte("forecast_date", dateRange.end)
+    .order("forecast_date", { ascending: true });
+
+  throwIfError(error);
+
+  return (data ?? []) as WeatherCache[];
 }
 
 export async function getParkAlerts(parkId: string): Promise<Alert[]> {

@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { forecastConfig } from "@/lib/forecast/config";
 import type { IngestError, SyncWeatherSummary } from "@/lib/ingest/types";
 import { fetchWeather } from "@/lib/sources/weather";
 import type { Tables, TablesInsert } from "@/types/database";
@@ -10,7 +11,9 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unknown weather sync error";
 }
 
-export async function syncWeather(days = 10): Promise<SyncWeatherSummary> {
+export async function syncWeather(
+  days = forecastConfig.weatherHorizonDays
+): Promise<SyncWeatherSummary> {
   const supabase = createAdminClient();
   const summary: SyncWeatherSummary = {
     days,

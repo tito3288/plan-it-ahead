@@ -45,7 +45,7 @@ export type ForecastGenerationSummary = {
   windowDays: number;
 };
 
-type ParkForecastContext = {
+export type ParkForecastContext = {
   alertsCount: number;
   history: VisitationHistory[];
   lots: ForecastLot[];
@@ -92,6 +92,12 @@ function daysOut(date: string, dates: string[]) {
   return index === -1 ? forecastConfig.forecastWindowDays : index;
 }
 
+function isWithinWeatherHorizon(date: string, dates: string[]) {
+  const index = dates.indexOf(date);
+
+  return index >= 0 && index < forecastConfig.weatherHorizonDays;
+}
+
 function earliestArriveBy(lotPredictions: Array<{ arrive_by: string }>) {
   return lotPredictions.find((prediction) => prediction.arrive_by !== "Anytime")
     ?.arrive_by ?? null;
@@ -101,7 +107,7 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unknown forecast error";
 }
 
-function buildRow(
+export function buildForecastRow(
   context: ParkForecastContext,
   forecastDate: string,
   dates: string[]
@@ -110,9 +116,9 @@ function buildRow(
   const history = context.history.find(
     (entry) => entry.month === month && entry.dow === dow
   );
-  const weather = context.weather.find(
-    (entry) => entry.forecast_date === forecastDate
-  );
+  const weather = isWithinWeatherHorizon(forecastDate, dates)
+    ? context.weather.find((entry) => entry.forecast_date === forecastDate)
+    : undefined;
   const relativeBusyness = history?.relative_busyness ?? 0.45;
   const dailyScore = computeDailyScore({
     isHoliday: isUsHoliday(forecastDate),
@@ -159,8 +165,14 @@ function buildRow(
   };
 }
 
-async function loadParkContext(parkId: string): Promise<ParkForecastContext | null> {
+async function loadParkContext(
+  parkId: string,
+  dates: string[]
+): Promise<ParkForecastContext | null> {
   const supabase = createAdminClient();
+  const weatherEnd =
+    dates[Math.min(dates.length, forecastConfig.weatherHorizonDays) - 1] ??
+    dates[0];
 
   const { data: park, error: parkError } = await supabase
     .from("parks")
@@ -197,7 +209,9 @@ async function loadParkContext(parkId: string): Promise<ParkForecastContext | nu
       .select(
         "forecast_date,precip_chance,summary,temp_high,temp_low,weather_code"
       )
-      .eq("park_id", park.id),
+      .eq("park_id", park.id)
+      .gte("forecast_date", dates[0])
+      .lte("forecast_date", weatherEnd),
     supabase
       .from("alerts")
       .select("id", { count: "exact", head: true })
@@ -242,7 +256,7 @@ export async function generateForecastsForPark(
   };
 
   try {
-    const context = await loadParkContext(parkId);
+    const context = await loadParkContext(parkId, dates);
 
     if (!context) {
       return summary;
@@ -250,7 +264,7 @@ export async function generateForecastsForPark(
 
     summary.parks = 1;
 
-    const rows = dates.map((date) => buildRow(context, date, dates));
+    const rows = dates.map((date) => buildForecastRow(context, date, dates));
 
     const supabase = createAdminClient();
     const { error } = await supabase.from("daily_forecast").upsert(rows, {

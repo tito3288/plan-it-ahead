@@ -16,8 +16,10 @@ export type ForecastDayData = {
   daily_plan: string[];
   headline: string | null;
   hourly_status: ForecastStatus[];
+  is_seasonal_estimate: boolean;
   lot_predictions: ForecastLotPrediction[];
   source: ForecastSource;
+  weather_code: number | null;
   weather_summary: string | null;
 };
 

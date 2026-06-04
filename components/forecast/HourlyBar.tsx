@@ -2,6 +2,7 @@ import { forecastConfig, type ForecastStatus } from "@/lib/forecast/config";
 import { cn } from "@/lib/utils";
 
 type HourlyBarProps = {
+  isTypicalPattern?: boolean;
   statuses: ForecastStatus[];
 };
 
@@ -46,7 +47,10 @@ function hourLabel(hour: number) {
   return `${hour}a`;
 }
 
-export function HourlyBar({ statuses }: HourlyBarProps) {
+export function HourlyBar({
+  isTypicalPattern = false,
+  statuses
+}: HourlyBarProps) {
   return (
     <section className="rounded-[18px] border border-border bg-white/70 p-5 shadow-soft backdrop-blur-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -57,6 +61,11 @@ export function HourlyBar({ statuses }: HourlyBarProps) {
           <h2 className="mt-1 font-heading text-3xl font-semibold text-ink">
             Hour by hour
           </h2>
+          {isTypicalPattern ? (
+            <p className="mt-2 text-sm font-semibold text-ink-soft">
+              Typical pattern
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap gap-2">

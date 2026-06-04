@@ -14,6 +14,12 @@ export function computeConfidence({
   daysOut,
   hasWeather
 }: ComputeConfidenceInput): Confidence {
+  if (!hasWeather) {
+    return daysOut <= forecastConfig.confidence.noWeatherMediumDays
+      ? "medium"
+      : "low";
+  }
+
   let score = 0;
 
   if (dataTier === 1) {
@@ -22,15 +28,13 @@ export function computeConfidence({
     score += 1;
   }
 
-  if (hasWeather) {
-    score += 1;
-  }
+  score += 1;
 
   if (daysOut <= forecastConfig.confidence.nearTermDays) {
     score += 1;
   }
 
-  if (!hasWeather || daysOut > forecastConfig.confidence.farOutDays) {
+  if (daysOut > forecastConfig.confidence.farOutDays) {
     score -= 1;
   }
 
