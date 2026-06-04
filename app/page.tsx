@@ -1,9 +1,38 @@
 import { ArrowRight, CalendarDays } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-export default function HomePage() {
+type HomePageProps = {
+  searchParams: Record<string, string | string[] | undefined>;
+};
+
+function firstSearchParamValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function callbackQuery(searchParams: HomePageProps["searchParams"]) {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    const firstValue = firstSearchParamValue(value);
+
+    if (firstValue) {
+      params.set(key, firstValue);
+    }
+  }
+
+  return params.toString();
+}
+
+export default function HomePage({ searchParams }: HomePageProps) {
+  if (searchParams.code) {
+    const query = callbackQuery(searchParams);
+
+    redirect(`/auth/callback${query ? `?${query}` : ""}`);
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
       <section className="w-full max-w-4xl text-center">
