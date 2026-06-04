@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { LoginForm } from "@/app/login/LoginForm";
 import { safeRedirectPath } from "@/lib/auth/session";
-import { getSiteUrl } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +14,6 @@ type LoginPageProps = {
 
 export default function LoginPage({ searchParams }: LoginPageProps) {
   const nextPath = safeRedirectPath(searchParams.next);
-  const siteUrl = getSiteUrl();
 
   return (
     <main className="min-h-screen px-5 py-6 sm:px-8">
@@ -51,7 +49,6 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
         <LoginForm
           errorMessage={searchParams.error ?? null}
           nextPath={nextPath}
-          siteUrl={siteUrl}
         />
       </section>
     </main>
