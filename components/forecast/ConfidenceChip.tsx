@@ -29,7 +29,7 @@ export function ConfidenceChip({ confidence, source }: ConfidenceChipProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold",
+        "inline-flex min-w-max shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold",
         confidenceClasses[confidence]
       )}
     >

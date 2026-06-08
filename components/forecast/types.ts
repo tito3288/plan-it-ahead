@@ -42,6 +42,17 @@ export type ForecastHighlight = {
     | "Reservation-aware";
 };
 
+export type ForecastStayOption = {
+  area: string;
+  best_for_label: string;
+  drive_note: string;
+  id: string;
+  kind: "gateway_town" | "in_park_lodging" | "campground_area";
+  name: string;
+  planning_note: string;
+  source_url: string | null;
+};
+
 export type ForecastPark = {
   full_name: string;
   id: string;

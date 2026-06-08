@@ -236,6 +236,62 @@ export type Database = {
           },
         ]
       }
+      park_stay_options: {
+        Row: {
+          area: string
+          best_for_label: string
+          created_at: string
+          display_order: number
+          drive_note: string
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          park_id: string
+          planning_note: string
+          source_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          area: string
+          best_for_label: string
+          created_at?: string
+          display_order?: number
+          drive_note: string
+          id?: string
+          is_active?: boolean
+          kind: string
+          name: string
+          park_id: string
+          planning_note: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          area?: string
+          best_for_label?: string
+          created_at?: string
+          display_order?: number
+          drive_note?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          park_id?: string
+          planning_note?: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "park_stay_options_park_id_fkey"
+            columns: ["park_id"]
+            isOneToOne: false
+            referencedRelation: "parks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parks: {
         Row: {
           blurb: string | null

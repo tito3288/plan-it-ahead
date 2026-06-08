@@ -9,12 +9,14 @@ import { DailyPlan } from "@/components/forecast/DailyPlan";
 import { HourlyBar } from "@/components/forecast/HourlyBar";
 import { LotCard } from "@/components/forecast/LotCard";
 import { PopularStops } from "@/components/forecast/PopularStops";
+import { WhereToStayNearby } from "@/components/forecast/WhereToStayNearby";
 import type {
   ForecastAlert,
   ForecastDay,
   ForecastHighlight,
   ForecastPark,
-  ForecastSaveTrip
+  ForecastSaveTrip,
+  ForecastStayOption
 } from "@/components/forecast/types";
 import { SaveTripButton } from "@/components/forecast/SaveTripButton";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,7 @@ type ForecastViewProps = {
   highlights: ForecastHighlight[];
   park: ForecastPark;
   saveTrip: ForecastSaveTrip;
+  stayOptions: ForecastStayOption[];
 };
 
 function formatTabDate(date: string) {
@@ -80,7 +83,8 @@ export function ForecastView({
   days,
   highlights,
   park,
-  saveTrip
+  saveTrip,
+  stayOptions
 }: ForecastViewProps) {
   const [selectedDate, setSelectedDate] = useState(days[0]?.date ?? "");
   const selectedDay = useMemo(
@@ -143,7 +147,7 @@ export function ForecastView({
           <>
             <div className="rounded-[18px] border border-border bg-white/70 p-5 shadow-soft backdrop-blur-sm sm:p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
+                <div className="min-w-0">
                   <div className="inline-flex items-center gap-2 text-sm font-semibold text-amber-deep">
                     <WeatherIcon
                       className="h-5 w-5 shrink-0"
@@ -181,6 +185,8 @@ export function ForecastView({
             <PopularStops highlights={highlights} />
 
             <DailyPlan dayLabel={selectedLabel} steps={forecast.daily_plan} />
+
+            <WhereToStayNearby stayOptions={stayOptions} />
           </>
         ) : (
           <div className="rounded-[18px] border border-border bg-white/70 p-6 shadow-soft backdrop-blur-sm">

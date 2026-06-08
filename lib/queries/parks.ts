@@ -6,6 +6,7 @@ import type { Tables, TablesInsert } from "@/types/database";
 export type Park = Tables<"parks">;
 export type Lot = Tables<"lots">;
 export type ParkHighlight = Tables<"park_highlights">;
+export type ParkStayOption = Tables<"park_stay_options">;
 export type DailyForecast = Tables<"daily_forecast">;
 export type WeatherCache = Tables<"weather_cache">;
 export type Alert = Tables<"alerts">;
@@ -42,10 +43,10 @@ function throwIfError(error: PostgrestError | null) {
   }
 }
 
-function isMissingParkHighlightsTable(error: PostgrestError) {
+function isMissingSchemaCacheTable(error: PostgrestError, tableName: string) {
   return (
     error.code === "PGRST205" ||
-    (error.message.includes("park_highlights") &&
+    (error.message.includes(tableName) &&
       error.message.includes("schema cache"))
   );
 }
@@ -164,13 +165,35 @@ export async function getParkHighlights(
     .order("display_order", { ascending: true })
     .order("name", { ascending: true });
 
-  if (error && isMissingParkHighlightsTable(error)) {
+  if (error && isMissingSchemaCacheTable(error, "park_highlights")) {
     return [];
   }
 
   throwIfError(error);
 
   return (data ?? []) as ParkHighlight[];
+}
+
+export async function getParkStayOptions(
+  parkId: string
+): Promise<ParkStayOption[]> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("park_stay_options")
+    .select("*")
+    .eq("park_id", parkId)
+    .eq("is_active", true)
+    .order("display_order", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (error && isMissingSchemaCacheTable(error, "park_stay_options")) {
+    return [];
+  }
+
+  throwIfError(error);
+
+  return (data ?? []) as ParkStayOption[];
 }
 
 export async function getSavedTrips(userId: string): Promise<SavedTrip[]> {

@@ -10,7 +10,8 @@ import type {
   ForecastHighlight,
   ForecastLotPrediction,
   ForecastPark,
-  ForecastSource
+  ForecastSource,
+  ForecastStayOption
 } from "@/components/forecast/types";
 import { forecastConfig, type ForecastStatus } from "@/lib/forecast/config";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -20,9 +21,11 @@ import {
   getParkAlerts,
   getParkHighlights,
   getParkBySlug,
+  getParkStayOptions,
   getParkWeather,
   type DailyForecast,
   type ParkHighlight,
+  type ParkStayOption,
   type WeatherCache
 } from "@/lib/queries/parks";
 import type { Json } from "@/types/database";
@@ -160,6 +163,18 @@ function parseTimingLabel(
   return null;
 }
 
+function parseStayOptionKind(value: string): ForecastStayOption["kind"] | null {
+  if (
+    value === "gateway_town" ||
+    value === "in_park_lodging" ||
+    value === "campground_area"
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
 function parseDailyPlan(value: Json | null): string[] {
   if (!Array.isArray(value)) {
     return ["Arrive early and keep one flexible backup stop in your plan."];
@@ -231,6 +246,25 @@ function adaptHighlight(row: ParkHighlight): ForecastHighlight | null {
   };
 }
 
+function adaptStayOption(row: ParkStayOption): ForecastStayOption | null {
+  const kind = parseStayOptionKind(row.kind);
+
+  if (!kind) {
+    return null;
+  }
+
+  return {
+    area: row.area,
+    best_for_label: row.best_for_label,
+    drive_note: row.drive_note,
+    id: row.id,
+    kind,
+    name: row.name,
+    planning_note: row.planning_note,
+    source_url: row.source_url
+  };
+}
+
 function adaptForecast(
   row: DailyForecast,
   weather: WeatherCache | undefined,
@@ -290,23 +324,30 @@ export default async function ForecastPage({
   const user = await getCurrentUser();
   const normalizedEnd = end !== start ? end : null;
   const shouldFetchWeather = start <= weatherWindowEnd;
-  const [forecastRows, alerts, highlights, weatherRows, savedTrip] =
-    await Promise.all([
-      getForecast(park.id, { end, start }),
-      getParkAlerts(park.id),
-      getParkHighlights(park.id),
-      shouldFetchWeather
-        ? getParkWeather(park.id, { end: weatherQueryEnd, start })
-        : Promise.resolve([]),
-      user
-        ? findSavedTrip({
-            endDate: normalizedEnd,
-            parkId: park.id,
-            startDate: start,
-            userId: user.id
-          })
-        : Promise.resolve(null)
-    ]);
+  const [
+    forecastRows,
+    alerts,
+    highlights,
+    stayOptions,
+    weatherRows,
+    savedTrip
+  ] = await Promise.all([
+    getForecast(park.id, { end, start }),
+    getParkAlerts(park.id),
+    getParkHighlights(park.id),
+    getParkStayOptions(park.id),
+    shouldFetchWeather
+      ? getParkWeather(park.id, { end: weatherQueryEnd, start })
+      : Promise.resolve([]),
+    user
+      ? findSavedTrip({
+          endDate: normalizedEnd,
+          parkId: park.id,
+          startDate: start,
+          userId: user.id
+        })
+      : Promise.resolve(null)
+  ]);
   const weatherByDate = new Map(
     weatherRows.map((row) => [row.forecast_date, row])
   );
@@ -340,6 +381,11 @@ export default async function ForecastPage({
 
     return adapted ? [adapted] : [];
   });
+  const forecastStayOptions = stayOptions.flatMap((stayOption) => {
+    const adapted = adaptStayOption(stayOption);
+
+    return adapted ? [adapted] : [];
+  });
 
   return (
     <main className="min-h-screen pb-12">
@@ -361,6 +407,7 @@ export default async function ForecastPage({
           startDate: start,
           title: `${park.name} · ${formatDateRangeLabel(start, end)}`
         }}
+        stayOptions={forecastStayOptions}
       />
     </main>
   );
