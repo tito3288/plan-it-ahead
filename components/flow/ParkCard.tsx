@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Ticket } from "lucide-react";
 
 import type { Park } from "@/lib/queries/parks";
@@ -5,6 +6,16 @@ import type { Park } from "@/lib/queries/parks";
 type ParkCardProps = {
   park: Park;
 };
+
+// Image filenames don't all match slugs, so map the exceptions.
+const parkImageOverrides: Record<string, string> = {
+  "mount-rainier": "/mount-rainer.jpg",
+  shenandoah: "/Shenandoah.jpg",
+};
+
+function parkImage(slug: string) {
+  return parkImageOverrides[slug] ?? `/${slug}.jpg`;
+}
 
 function dataNote(dataTier: number) {
   if (dataTier === 1) {
@@ -28,21 +39,14 @@ export function ParkCard({ park }: ParkCardProps) {
         className="relative min-h-44 overflow-hidden"
         style={{ background: park.gradient }}
       >
-        <svg
-          className="absolute inset-x-0 bottom-0 h-28 w-full text-white/35"
-          viewBox="0 0 600 180"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M0 145L85 78L142 118L228 42L315 125L388 66L468 126L600 58V180H0Z"
-            fill="currentColor"
-          />
-          <path
-            d="M0 162L72 120L138 146L210 96L300 154L386 112L470 150L600 108V180H0Z"
-            fill="rgba(255,255,255,0.28)"
-          />
-        </svg>
+        <Image
+          src={parkImage(park.slug)}
+          alt={park.full_name ?? park.name}
+          fill
+          sizes="(min-width: 768px) 50vw, 100vw"
+          className="object-cover transition duration-300 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
         {park.requires_reservation ? (
           <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-amber-soft px-3 py-1.5 text-xs font-semibold text-amber-deep shadow-soft">
