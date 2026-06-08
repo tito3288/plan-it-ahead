@@ -8,9 +8,11 @@ import { ConfidenceChip } from "@/components/forecast/ConfidenceChip";
 import { DailyPlan } from "@/components/forecast/DailyPlan";
 import { HourlyBar } from "@/components/forecast/HourlyBar";
 import { LotCard } from "@/components/forecast/LotCard";
+import { PopularStops } from "@/components/forecast/PopularStops";
 import type {
   ForecastAlert,
   ForecastDay,
+  ForecastHighlight,
   ForecastPark,
   ForecastSaveTrip
 } from "@/components/forecast/types";
@@ -23,6 +25,7 @@ type ForecastViewProps = {
   alerts: ForecastAlert[];
   dateRangeLabel: string;
   days: ForecastDay[];
+  highlights: ForecastHighlight[];
   park: ForecastPark;
   saveTrip: ForecastSaveTrip;
 };
@@ -75,6 +78,7 @@ export function ForecastView({
   alerts,
   dateRangeLabel,
   days,
+  highlights,
   park,
   saveTrip
 }: ForecastViewProps) {
@@ -90,12 +94,12 @@ export function ForecastView({
     : null;
   const WeatherIcon = forecast?.is_seasonal_estimate
     ? CloudSun
-    : weatherMeta?.icon ?? CloudSun;
+    : (weatherMeta?.icon ?? CloudSun);
   const weatherText =
     forecast && selectedDay?.date
       ? forecast.is_seasonal_estimate
         ? formatSeasonalPatternNote(selectedDay.date)
-        : forecast.weather_summary ?? "Forecast estimate"
+        : (forecast.weather_summary ?? "Forecast estimate")
       : "Forecast estimate";
 
   return (
@@ -141,7 +145,10 @@ export function ForecastView({
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="inline-flex items-center gap-2 text-sm font-semibold text-amber-deep">
-                    <WeatherIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                    <WeatherIcon
+                      className="h-5 w-5 shrink-0"
+                      aria-hidden="true"
+                    />
                     <span>{weatherText}</span>
                   </div>
                   <h2 className="mt-3 font-heading text-3xl font-semibold leading-tight text-ink sm:text-4xl">
@@ -170,6 +177,8 @@ export function ForecastView({
                 <LotCard key={prediction.lot_id} prediction={prediction} />
               ))}
             </div>
+
+            <PopularStops highlights={highlights} />
 
             <DailyPlan dayLabel={selectedLabel} steps={forecast.daily_plan} />
           </>

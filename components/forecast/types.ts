@@ -28,6 +28,20 @@ export type ForecastDay = {
   forecast: ForecastDayData | null;
 };
 
+export type ForecastHighlight = {
+  area: string;
+  id: string;
+  kind: "hike" | "landmark" | "viewpoint";
+  name: string;
+  planning_note: string;
+  source_url: string | null;
+  timing_label:
+    | "Do early"
+    | "Good backup"
+    | "Anytime stop"
+    | "Reservation-aware";
+};
+
 export type ForecastPark = {
   full_name: string;
   id: string;

@@ -183,6 +183,59 @@ export type Database = {
           },
         ]
       }
+      park_highlights: {
+        Row: {
+          area: string
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          park_id: string
+          planning_note: string
+          source_url: string | null
+          timing_label: string
+          updated_at: string
+        }
+        Insert: {
+          area: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          kind: string
+          name: string
+          park_id: string
+          planning_note: string
+          source_url?: string | null
+          timing_label: string
+          updated_at?: string
+        }
+        Update: {
+          area?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          park_id?: string
+          planning_note?: string
+          source_url?: string | null
+          timing_label?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "park_highlights_park_id_fkey"
+            columns: ["park_id"]
+            isOneToOne: false
+            referencedRelation: "parks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parks: {
         Row: {
           blurb: string | null

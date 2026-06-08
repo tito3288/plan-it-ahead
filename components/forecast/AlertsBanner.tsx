@@ -1,6 +1,10 @@
+"use client";
+
 import { AlertTriangle, Info } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import type { ForecastAlert, ForecastPark } from "@/components/forecast/types";
+import { cn } from "@/lib/utils";
 
 type AlertsBannerProps = {
   alerts: ForecastAlert[];
@@ -8,11 +12,28 @@ type AlertsBannerProps = {
 };
 
 export function AlertsBanner({ alerts, park }: AlertsBannerProps) {
+  const [expandedAlertIds, setExpandedAlertIds] = useState<Set<string>>(
+    () => new Set()
+  );
+  const visibleAlerts = alerts.slice(0, 2);
+
   if (!park.requires_reservation && alerts.length === 0) {
     return null;
   }
 
-  const visibleAlerts = alerts.slice(0, 2);
+  function toggleAlert(alertId: string) {
+    setExpandedAlertIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(alertId)) {
+        next.delete(alertId);
+      } else {
+        next.add(alertId);
+      }
+
+      return next;
+    });
+  }
 
   return (
     <aside className="border-amber/25 rounded-[18px] border bg-amber-soft p-4 text-amber-deep shadow-soft sm:p-5">
@@ -37,27 +58,96 @@ export function AlertsBanner({ alerts, park }: AlertsBannerProps) {
           ) : null}
 
           {visibleAlerts.map((alert) => (
-            <div key={alert.id}>
-              <p className="font-semibold text-ink">{alert.title}</p>
-              {alert.description ? (
-                <p className="mt-1 line-clamp-2 text-sm leading-6 text-ink-soft">
-                  {alert.description}
-                </p>
-              ) : null}
-              {alert.url ? (
-                <a
-                  href={alert.url}
-                  className="mt-1 inline-block text-sm font-semibold text-green transition hover:text-amber-deep"
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  View park alert
-                </a>
-              ) : null}
-            </div>
+            <AlertItem
+              alert={alert}
+              expanded={expandedAlertIds.has(alert.id)}
+              key={alert.id}
+              onToggle={() => toggleAlert(alert.id)}
+            />
           ))}
         </div>
       </div>
     </aside>
+  );
+}
+
+function AlertItem({
+  alert,
+  expanded,
+  onToggle
+}: {
+  alert: ForecastAlert;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const descriptionRef = useRef<HTMLParagraphElement>(null);
+  const [canExpand, setCanExpand] = useState(false);
+
+  useEffect(() => {
+    const description = descriptionRef.current;
+
+    if (!description || expanded) {
+      return;
+    }
+
+    function updateCanExpand() {
+      if (!description) {
+        return;
+      }
+
+      setCanExpand(description.scrollHeight > description.clientHeight + 1);
+    }
+
+    updateCanExpand();
+
+    const resizeObserver = new ResizeObserver(updateCanExpand);
+    resizeObserver.observe(description);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [alert.description, expanded]);
+
+  return (
+    <div>
+      <p className="font-semibold text-ink">{alert.title}</p>
+      {alert.description ? (
+        <>
+          <p
+            className={cn(
+              "mt-1 text-sm leading-6 text-ink-soft",
+              !expanded && "line-clamp-2"
+            )}
+            ref={descriptionRef}
+          >
+            {alert.description}
+          </p>
+        </>
+      ) : null}
+      {canExpand || alert.url ? (
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {canExpand ? (
+            <button
+              aria-expanded={expanded}
+              className="text-sm font-semibold text-green transition hover:text-amber-deep"
+              onClick={onToggle}
+              type="button"
+            >
+              {expanded ? "Read less" : "Read more"}
+            </button>
+          ) : null}
+          {alert.url ? (
+            <a
+              href={alert.url}
+              className="text-sm font-semibold text-green transition hover:text-amber-deep"
+              rel="noreferrer"
+              target="_blank"
+            >
+              View park alert
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }

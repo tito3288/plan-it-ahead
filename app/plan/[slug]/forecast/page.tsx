@@ -7,6 +7,7 @@ import type {
   ForecastConfidence,
   ForecastDay,
   ForecastDayData,
+  ForecastHighlight,
   ForecastLotPrediction,
   ForecastPark,
   ForecastSource
@@ -17,9 +18,11 @@ import {
   findSavedTrip,
   getForecast,
   getParkAlerts,
+  getParkHighlights,
   getParkBySlug,
   getParkWeather,
   type DailyForecast,
+  type ParkHighlight,
   type WeatherCache
 } from "@/lib/queries/parks";
 import type { Json } from "@/types/database";
@@ -134,6 +137,29 @@ function parseSource(value: string): ForecastSource {
   return "prediction";
 }
 
+function parseHighlightKind(value: string): ForecastHighlight["kind"] | null {
+  if (value === "hike" || value === "landmark" || value === "viewpoint") {
+    return value;
+  }
+
+  return null;
+}
+
+function parseTimingLabel(
+  value: string
+): ForecastHighlight["timing_label"] | null {
+  if (
+    value === "Do early" ||
+    value === "Good backup" ||
+    value === "Anytime stop" ||
+    value === "Reservation-aware"
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
 function parseDailyPlan(value: Json | null): string[] {
   if (!Array.isArray(value)) {
     return ["Arrive early and keep one flexible backup stop in your plan."];
@@ -184,6 +210,25 @@ function parseLotPredictions(value: Json): ForecastLotPrediction[] {
       }
     ];
   });
+}
+
+function adaptHighlight(row: ParkHighlight): ForecastHighlight | null {
+  const kind = parseHighlightKind(row.kind);
+  const timingLabel = parseTimingLabel(row.timing_label);
+
+  if (!kind || !timingLabel) {
+    return null;
+  }
+
+  return {
+    area: row.area,
+    id: row.id,
+    kind,
+    name: row.name,
+    planning_note: row.planning_note,
+    source_url: row.source_url,
+    timing_label: timingLabel
+  };
 }
 
 function adaptForecast(
@@ -245,21 +290,23 @@ export default async function ForecastPage({
   const user = await getCurrentUser();
   const normalizedEnd = end !== start ? end : null;
   const shouldFetchWeather = start <= weatherWindowEnd;
-  const [forecastRows, alerts, weatherRows, savedTrip] = await Promise.all([
-    getForecast(park.id, { end, start }),
-    getParkAlerts(park.id),
-    shouldFetchWeather
-      ? getParkWeather(park.id, { end: weatherQueryEnd, start })
-      : Promise.resolve([]),
-    user
-      ? findSavedTrip({
-          endDate: normalizedEnd,
-          parkId: park.id,
-          startDate: start,
-          userId: user.id
-        })
-      : Promise.resolve(null)
-  ]);
+  const [forecastRows, alerts, highlights, weatherRows, savedTrip] =
+    await Promise.all([
+      getForecast(park.id, { end, start }),
+      getParkAlerts(park.id),
+      getParkHighlights(park.id),
+      shouldFetchWeather
+        ? getParkWeather(park.id, { end: weatherQueryEnd, start })
+        : Promise.resolve([]),
+      user
+        ? findSavedTrip({
+            endDate: normalizedEnd,
+            parkId: park.id,
+            startDate: start,
+            userId: user.id
+          })
+        : Promise.resolve(null)
+    ]);
   const weatherByDate = new Map(
     weatherRows.map((row) => [row.forecast_date, row])
   );
@@ -288,6 +335,11 @@ export default async function ForecastPage({
     title: alert.title,
     url: alert.url
   }));
+  const forecastHighlights = highlights.flatMap((highlight) => {
+    const adapted = adaptHighlight(highlight);
+
+    return adapted ? [adapted] : [];
+  });
 
   return (
     <main className="min-h-screen pb-12">
@@ -296,6 +348,7 @@ export default async function ForecastPage({
         alerts={forecastAlerts}
         dateRangeLabel={formatDateRangeLabel(start, end)}
         days={forecastDays}
+        highlights={forecastHighlights}
         park={forecastPark}
         saveTrip={{
           endDate: end,

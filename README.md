@@ -191,6 +191,7 @@ Reference data, publicly readable through RLS:
 
 - `parks`: curated launch parks and card metadata.
 - `lots`: representative parking areas per park.
+- `park_highlights`: curated hikes, viewpoints, and landmarks per park.
 - `visitation_history`: 12 months x 7 day-of-week baseline rows per park.
 - `daily_forecast`: generated forecast cache for later phases.
 - `alerts`: NPS alert cache for later phases.
@@ -224,6 +225,7 @@ where schemaname = 'public'
   and tablename in (
     'parks',
     'lots',
+    'park_highlights',
     'visitation_history',
     'daily_forecast',
     'alerts',
