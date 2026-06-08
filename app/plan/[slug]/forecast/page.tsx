@@ -15,6 +15,7 @@ import type {
 } from "@/components/forecast/types";
 import { forecastConfig, type ForecastStatus } from "@/lib/forecast/config";
 import { getCurrentUser } from "@/lib/auth/session";
+import { getItineraryLinkForSavedTrip } from "@/lib/queries/itineraries";
 import {
   findSavedTrip,
   getForecast,
@@ -386,6 +387,13 @@ export default async function ForecastPage({
 
     return adapted ? [adapted] : [];
   });
+  const itineraryLink =
+    user && savedTrip
+      ? await getItineraryLinkForSavedTrip({
+          savedTripId: savedTrip.id,
+          userId: user.id
+        })
+      : null;
 
   return (
     <main className="min-h-screen pb-12">
@@ -401,9 +409,13 @@ export default async function ForecastPage({
           forecastPath: `/plan/${park.slug}/forecast?start=${start}&end=${end}`,
           initialSaved: Boolean(savedTrip),
           isSignedIn: Boolean(user),
+          itineraryHref: itineraryLink
+            ? `/trips/itineraries/${itineraryLink.itineraryId}`
+            : null,
           loginHref: loginHref(
             `/plan/${park.slug}/forecast?start=${start}&end=${end}`
           ),
+          savedTripId: savedTrip?.id ?? null,
           startDate: start,
           title: `${park.name} · ${formatDateRangeLabel(start, end)}`
         }}

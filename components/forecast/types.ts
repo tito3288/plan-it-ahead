@@ -67,7 +67,9 @@ export type ForecastSaveTrip = {
   forecastPath: string;
   initialSaved: boolean;
   isSignedIn: boolean;
+  itineraryHref: string | null;
   loginHref: string;
+  savedTripId: string | null;
   startDate: string;
   title: string;
 };

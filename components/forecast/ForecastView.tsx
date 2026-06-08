@@ -3,6 +3,7 @@
 import { CloudSun } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { createItineraryFromSavedTripAction } from "@/app/trips/itineraries/actions";
 import { AlertsBanner } from "@/components/forecast/AlertsBanner";
 import { ConfidenceChip } from "@/components/forecast/ConfidenceChip";
 import { DailyPlan } from "@/components/forecast/DailyPlan";
@@ -77,6 +78,31 @@ function sourceNote(source: string) {
   return "Prediction using planning data";
 }
 
+function ForecastItineraryAction({
+  href,
+  savedTripId
+}: {
+  href: string | null;
+  savedTripId: string | null;
+}) {
+  if (href) {
+    return <Button href={href}>View Itinerary</Button>;
+  }
+
+  if (savedTripId) {
+    return (
+      <form action={createItineraryFromSavedTripAction}>
+        <input name="savedTripId" type="hidden" value={savedTripId} />
+        <Button type="submit" variant="secondary">
+          Create Itinerary
+        </Button>
+      </form>
+    );
+  }
+
+  return null;
+}
+
 export function ForecastView({
   alerts,
   dateRangeLabel,
@@ -105,6 +131,9 @@ export function ForecastView({
         ? formatSeasonalPatternNote(selectedDay.date)
         : (forecast.weather_summary ?? "Forecast estimate")
       : "Forecast estimate";
+  const hasItineraryAction = Boolean(
+    saveTrip.itineraryHref || saveTrip.savedTripId
+  );
 
   return (
     <section className="mx-auto w-full max-w-6xl px-5 pt-6 sm:px-8">
@@ -116,6 +145,14 @@ export function ForecastView({
           {park.full_name}
         </h1>
         <p className="mt-4 text-lg leading-8 text-ink-soft">{dateRangeLabel}</p>
+        {hasItineraryAction ? (
+          <div className="mt-5">
+            <ForecastItineraryAction
+              href={saveTrip.itineraryHref}
+              savedTripId={saveTrip.savedTripId}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-7 flex gap-2 overflow-x-auto pb-2">

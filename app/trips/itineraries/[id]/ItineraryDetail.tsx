@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
-import { CalendarDays, FileText, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CalendarDays, FileText, Plus, Trash2 } from "lucide-react";
 
 import {
   buildDateRange,
@@ -89,6 +89,7 @@ export function ItineraryDetail({
       <div className="mt-8 grid gap-5">
         {dates.map((date) => {
           const dayItems = itemsForDate(itinerary.items, date);
+          const hasNote = dayItems.some((item) => item.item_type === "note");
 
           return (
             <section
@@ -129,6 +130,7 @@ export function ItineraryDetail({
               <div className="mt-5">
                 <AddNoteForm
                   action={addNoteAction}
+                  hasExistingNote={hasNote}
                   itemDate={date}
                   itineraryId={itinerary.id}
                 />
@@ -143,20 +145,43 @@ export function ItineraryDetail({
 
 function AddNoteForm({
   action,
+  hasExistingNote,
   itemDate,
   itineraryId
 }: {
   action: (formData: FormData) => void | Promise<void>;
+  hasExistingNote: boolean;
   itemDate: string;
   itineraryId: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
+  const [isExpanded, setIsExpanded] = useState(!hasExistingNote);
+
+  useEffect(() => {
+    if (!hasExistingNote) {
+      setIsExpanded(true);
+    }
+  }, [hasExistingNote]);
+
+  if (!isExpanded) {
+    return (
+      <button
+        className="inline-flex min-h-10 items-center gap-2 rounded-full border border-border bg-white/60 px-4 text-sm font-semibold text-green transition hover:border-green hover:bg-green-soft"
+        onClick={() => setIsExpanded(true)}
+        type="button"
+      >
+        <Plus className="h-4 w-4" aria-hidden="true" />
+        Add note
+      </button>
+    );
+  }
 
   return (
     <form
       action={async (formData) => {
         await action(formData);
         formRef.current?.reset();
+        setIsExpanded(false);
       }}
       className="rounded-[14px] border border-border bg-white/55 p-4"
       ref={formRef}
@@ -177,12 +202,26 @@ function AddNoteForm({
         name="notes"
         placeholder="Times, trailhead notes, parking reminders, or reservation details"
       />
-      <button
-        className="mt-3 inline-flex min-h-10 items-center rounded-full bg-green px-4 text-sm font-semibold text-white transition hover:bg-[#284f32]"
-        type="submit"
-      >
-        Add note
-      </button>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          className="inline-flex min-h-10 items-center rounded-full bg-green px-4 text-sm font-semibold text-white transition hover:bg-[#284f32]"
+          type="submit"
+        >
+          Add note
+        </button>
+        {hasExistingNote ? (
+          <button
+            className="inline-flex min-h-10 items-center rounded-full px-4 text-sm font-semibold text-muted transition hover:bg-green-soft hover:text-green"
+            onClick={() => {
+              formRef.current?.reset();
+              setIsExpanded(false);
+            }}
+            type="button"
+          >
+            Cancel
+          </button>
+        ) : null}
+      </div>
     </form>
   );
 }
