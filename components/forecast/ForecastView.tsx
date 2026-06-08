@@ -204,8 +204,18 @@ export function ForecastView({
         )}
       </div>
 
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+      <div className="mt-8">
         <SaveTripButton
+          actions={
+            <>
+              <Button href="/plan" variant="secondary">
+                Change park
+              </Button>
+              <Button href={`/plan/${park.slug}`} variant="secondary">
+                Edit dates
+              </Button>
+            </>
+          }
           endDate={saveTrip.endDate}
           forecastPath={saveTrip.forecastPath}
           initialSaved={saveTrip.initialSaved}
@@ -215,12 +225,6 @@ export function ForecastView({
           startDate={saveTrip.startDate}
           title={saveTrip.title}
         />
-        <Button href="/plan" variant="secondary">
-          Choose another park
-        </Button>
-        <Button href={`/plan/${park.slug}`} variant="secondary">
-          Edit dates
-        </Button>
       </div>
     </section>
   );

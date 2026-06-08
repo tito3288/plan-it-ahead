@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import type { ForecastStayOption } from "@/components/forecast/types";
+import { cn } from "@/lib/utils";
 
 type WhereToStayNearbyProps = {
   stayOptions: ForecastStayOption[];
@@ -49,15 +50,20 @@ export function WhereToStayNearby({ stayOptions }: WhereToStayNearbyProps) {
         </h2>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        {stayOptions.map((stayOption) => {
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        {stayOptions.map((stayOption, index) => {
           const meta = kindMeta[stayOption.kind];
           const Icon = meta.icon;
+          const isLastOddCard =
+            stayOptions.length % 2 === 1 && index === stayOptions.length - 1;
 
           return (
             <article
               key={stayOption.id}
-              className="rounded-[18px] border border-border bg-white/70 p-5 shadow-soft backdrop-blur-sm"
+              className={cn(
+                "rounded-[18px] border border-border bg-white/70 p-5 shadow-soft backdrop-blur-sm",
+                isLastOddCard && "lg:col-span-2"
+              )}
             >
               <div className="flex items-start gap-4">
                 <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-soft text-amber-deep">

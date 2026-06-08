@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
 import {
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type SaveTripButtonProps = {
+  actions?: ReactNode;
   endDate: string;
   forecastPath: string;
   initialSaved: boolean;
@@ -38,6 +40,7 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 }
 
 export function SaveTripButton({
+  actions,
   endDate,
   forecastPath,
   initialSaved,
@@ -49,26 +52,36 @@ export function SaveTripButton({
 }: SaveTripButtonProps) {
   const startingState: SaveTripState = {
     ...initialState,
-    message: initialSaved ? "Saved. View it in My Trips." : null,
+    message: initialSaved ? "Saved to My Trips." : null,
     status: initialSaved ? "saved" : "idle"
   };
   const [state, formAction] = useFormState(saveTripAction, startingState);
   const isSaved = state.status === "saved";
 
   if (!isSignedIn) {
-    return <Button href={loginHref}>Save this trip</Button>;
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button href={loginHref}>Save this trip</Button>
+          {actions}
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <form action={formAction}>
-        <input name="parkId" type="hidden" value={parkId} />
-        <input name="startDate" type="hidden" value={startDate} />
-        <input name="endDate" type="hidden" value={endDate} />
-        <input name="title" type="hidden" value={title} />
-        <input name="forecastPath" type="hidden" value={forecastPath} />
-        <SubmitButton disabled={isSaved} />
-      </form>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <form action={formAction}>
+          <input name="parkId" type="hidden" value={parkId} />
+          <input name="startDate" type="hidden" value={startDate} />
+          <input name="endDate" type="hidden" value={endDate} />
+          <input name="title" type="hidden" value={title} />
+          <input name="forecastPath" type="hidden" value={forecastPath} />
+          <SubmitButton disabled={isSaved} />
+        </form>
+        {actions}
+      </div>
 
       {state.message ? (
         <p
