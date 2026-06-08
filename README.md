@@ -202,6 +202,8 @@ User data, owner-scoped through RLS:
 
 - `profiles`: one row per Supabase Auth user, auto-created by trigger.
 - `saved_trips`: saved park/date plans per user.
+- `itineraries`: multi-day travel plans per user.
+- `itinerary_items`: saved park plans and notes within an itinerary.
 
 The seed migration creates:
 
@@ -233,7 +235,9 @@ where schemaname = 'public'
     'alerts',
     'weather_cache',
     'profiles',
-    'saved_trips'
+    'saved_trips',
+    'itineraries',
+    'itinerary_items'
   );
 
 select tablename, policyname, cmd

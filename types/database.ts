@@ -142,6 +142,93 @@ export type Database = {
           },
         ]
       }
+      itineraries: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          notes: string | null
+          start_date: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          start_date: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          start_date?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      itinerary_items: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          item_date: string
+          item_type: string
+          itinerary_id: string
+          notes: string | null
+          saved_trip_id: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          item_date: string
+          item_type: string
+          itinerary_id: string
+          notes?: string | null
+          saved_trip_id?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          item_date?: string
+          item_type?: string
+          itinerary_id?: string
+          notes?: string | null
+          saved_trip_id?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itinerary_items_itinerary_id_fkey"
+            columns: ["itinerary_id"]
+            isOneToOne: false
+            referencedRelation: "itineraries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itinerary_items_saved_trip_id_fkey"
+            columns: ["saved_trip_id"]
+            isOneToOne: false
+            referencedRelation: "saved_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lots: {
         Row: {
           created_at: string

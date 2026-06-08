@@ -235,6 +235,36 @@ export async function getSavedTripsWithParks(
   }));
 }
 
+export async function getSavedTripWithParkById({
+  tripId,
+  userId
+}: {
+  tripId: string;
+  userId: string;
+}): Promise<SavedTripWithPark | null> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("saved_trips")
+    .select("*, parks(*)")
+    .eq("id", tripId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  throwIfError(error);
+
+  if (!data) {
+    return null;
+  }
+
+  const { parks, ...trip } = data as unknown as SavedTripWithParkRow;
+
+  return {
+    ...trip,
+    park: parks
+  };
+}
+
 export async function findSavedTrip({
   endDate,
   parkId,

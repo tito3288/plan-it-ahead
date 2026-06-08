@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { deleteTripAction } from "@/app/trips/actions";
+import { createItineraryFromSavedTripAction } from "@/app/trips/itineraries/actions";
 import { TripsList } from "@/app/trips/TripsList";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +11,7 @@ import {
   getCurrentUser,
   getCurrentUserProfile
 } from "@/lib/auth/session";
+import { getItineraryLinksForSavedTrips } from "@/lib/queries/itineraries";
 import { getSavedTripsWithParks } from "@/lib/queries/parks";
 
 export const dynamic = "force-dynamic";
@@ -26,14 +28,18 @@ export default async function TripsPage() {
     getCurrentUserProfile()
   ]);
   const name = firstName(profile?.display_name);
+  const itineraryLinks = await getItineraryLinksForSavedTrips({
+    savedTripIds: trips.map((trip) => trip.id),
+    userId: user.id
+  });
+  const itineraryIdBySavedTripId = Object.fromEntries(
+    itineraryLinks.map((link) => [link.savedTripId, link.itineraryId])
+  );
 
   return (
     <main className="min-h-screen px-5 py-6 sm:px-8">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
-        <Link
-          href="/"
-          className="shrink-0"
-        >
+        <Link href="/" className="shrink-0">
           <Image
             src="/plan-It-ahead.png"
             alt="PlanItAhead"
@@ -71,26 +77,50 @@ export default async function TripsPage() {
         <p className="mt-4 max-w-2xl text-lg leading-8 text-ink-soft">
           {name
             ? "Your saved park days are ready when you are."
-            : "Revisit forecast windows you have saved for upcoming park days."}
+            : "Turn saved forecasts into simple day-by-day itineraries."}
         </p>
 
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button href="/plan" variant="secondary">
+            Plan a park day
+          </Button>
+        </div>
+
         <div className="mt-8">
-          {trips.length > 0 ? (
-            <TripsList deleteAction={deleteTripAction} trips={trips} />
-          ) : (
-            <div className="rounded-[18px] border border-border bg-white/70 p-6 shadow-soft backdrop-blur-sm">
-              <h2 className="font-heading text-3xl font-semibold text-ink">
-                No saved trips yet
-              </h2>
-              <p className="mt-3 max-w-xl text-base leading-7 text-ink-soft">
-                Pick a park, choose dates, and save the forecast when it looks
-                useful.
+          <section>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-amber-deep">
+                Saved park plans
               </p>
-              <Button className="mt-5" href="/plan">
-                Plan one
-              </Button>
+              <h2 className="mt-1 font-heading text-3xl font-semibold text-ink">
+                Forecasts you saved
+              </h2>
             </div>
-          )}
+
+            <div className="mt-4">
+              {trips.length > 0 ? (
+                <TripsList
+                  createItineraryAction={createItineraryFromSavedTripAction}
+                  deleteAction={deleteTripAction}
+                  itineraryIdBySavedTripId={itineraryIdBySavedTripId}
+                  trips={trips}
+                />
+              ) : (
+                <div className="rounded-[18px] border border-border bg-white/70 p-6 shadow-soft backdrop-blur-sm">
+                  <h3 className="font-heading text-2xl font-semibold text-ink">
+                    No saved park plans yet
+                  </h3>
+                  <p className="mt-3 max-w-xl text-base leading-7 text-ink-soft">
+                    Pick a park, choose dates, and save the forecast when it
+                    looks useful.
+                  </p>
+                  <Button className="mt-5" href="/plan">
+                    Plan one
+                  </Button>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       </section>
     </main>
