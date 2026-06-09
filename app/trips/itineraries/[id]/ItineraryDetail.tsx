@@ -325,7 +325,7 @@ function ItemActions({
   viewHref?: string;
 }) {
   return (
-    <div className="flex flex-col gap-2 sm:items-end">
+    <div className="flex items-center gap-2 self-start sm:justify-end">
       {viewHref ? (
         <Link
           href={viewHref}
@@ -345,11 +345,12 @@ function ItemActions({
         <input name="itemId" type="hidden" value={itemId} />
         <input name="itineraryId" type="hidden" value={itineraryId} />
         <button
-          className="inline-flex min-h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold text-muted transition hover:bg-red-soft hover:text-red"
+          aria-label="Delete item"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-muted transition hover:bg-red-soft hover:text-red"
+          title="Delete item"
           type="submit"
         >
           <Trash2 className="h-4 w-4" aria-hidden="true" />
-          Delete item
         </button>
       </form>
     </div>

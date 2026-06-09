@@ -62,7 +62,7 @@ export default async function ParkCalendarPage({
         <Link
           href="/plan"
           prefetch={false}
-          className="text-sm font-semibold text-green transition hover:text-amber-deep"
+          className="inline-flex min-h-10 items-center text-sm font-semibold text-green transition hover:text-amber-deep"
         >
           Back to parks
         </Link>

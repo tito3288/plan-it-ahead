@@ -33,14 +33,14 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
               <Link
                 href="/trips"
                 prefetch={false}
-                className="text-green transition hover:text-amber-deep"
+                className="inline-flex min-h-10 items-center text-green transition hover:text-amber-deep"
               >
                 My Trips
               </Link>
               <form action="/auth/signout" method="post">
                 <button
                   type="submit"
-                  className="text-muted transition hover:text-amber-deep"
+                  className="inline-flex min-h-10 items-center text-muted transition hover:text-amber-deep"
                 >
                   Sign out
                 </button>
@@ -50,7 +50,7 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
             <Link
               href="/login"
               prefetch={false}
-              className="text-green transition hover:text-amber-deep"
+              className="inline-flex min-h-10 items-center text-green transition hover:text-amber-deep"
             >
               Log in
             </Link>
@@ -89,14 +89,14 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
               <Link
                 href="/trips"
                 prefetch={false}
-                className="text-green transition hover:text-amber-deep"
+                className="inline-flex min-h-10 items-center text-green transition hover:text-amber-deep"
               >
                 My Trips
               </Link>
               <form action="/auth/signout" method="post">
                 <button
                   type="submit"
-                  className="text-muted transition hover:text-amber-deep"
+                  className="inline-flex min-h-10 items-center text-muted transition hover:text-amber-deep"
                 >
                   Sign out
                 </button>
@@ -106,7 +106,7 @@ export async function BrandHeader({ step }: BrandHeaderProps) {
             <Link
               href="/login"
               prefetch={false}
-              className="text-green transition hover:text-amber-deep"
+              className="inline-flex min-h-10 items-center text-green transition hover:text-amber-deep"
             >
               Log in
             </Link>

@@ -17,19 +17,19 @@ const statusMeta: Record<
 > = {
   0: {
     bar: "bg-green",
-    height: "h-9",
+    height: "2.25rem",
     label: "Easy",
     swatch: "bg-green"
   },
   1: {
     bar: "bg-amber",
-    height: "h-16",
+    height: "4rem",
     label: "Filling",
     swatch: "bg-amber"
   },
   2: {
     bar: "bg-red",
-    height: "h-24",
+    height: "6rem",
     label: "Full",
     swatch: "bg-red"
   }
@@ -98,10 +98,14 @@ export function HourlyBar({
               <div className="flex h-28 items-end">
                 <div
                   className={cn(
-                    "w-3 rounded-full shadow-sm sm:w-4",
-                    statusMeta[status].bar,
-                    statusMeta[status].height
+                    "w-3 rounded-full shadow-sm transition-[height,background-color,transform] duration-500 motion-reduce:transition-none sm:w-4",
+                    statusMeta[status].bar
                   )}
+                  style={{
+                    height: statusMeta[status].height,
+                    transitionTimingFunction:
+                      "cubic-bezier(0.34, 1.56, 0.64, 1)"
+                  }}
                   aria-label={`${hourLabel(hour)} ${statusMeta[status].label}`}
                 />
               </div>

@@ -52,14 +52,14 @@ export default async function TripsPage() {
         <div className="flex items-center gap-3 whitespace-nowrap text-sm font-semibold">
           <Link
             href="/plan"
-            className="text-green transition hover:text-amber-deep"
+            className="inline-flex min-h-10 items-center text-green transition hover:text-amber-deep"
           >
             Plan a trip
           </Link>
           <form action="/auth/signout" method="post">
             <button
               type="submit"
-              className="text-muted transition hover:text-amber-deep"
+              className="inline-flex min-h-10 items-center text-muted transition hover:text-amber-deep"
             >
               Sign out
             </button>

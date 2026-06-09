@@ -92,7 +92,10 @@ export function SaveTripButton({
         >
           {state.message}{" "}
           {isSaved ? (
-            <Link href="/trips" className="underline underline-offset-4">
+            <Link
+              href="/trips"
+              className="inline-flex min-h-10 items-center underline underline-offset-4"
+            >
               View in My Trips
             </Link>
           ) : null}

@@ -49,7 +49,7 @@ export default async function ItineraryPage({ params }: ItineraryPageProps) {
         </Link>
         <Link
           href="/trips"
-          className="text-sm font-semibold text-green transition hover:text-amber-deep"
+          className="inline-flex min-h-10 items-center text-sm font-semibold text-green transition hover:text-amber-deep"
         >
           Back to My Trips
         </Link>
